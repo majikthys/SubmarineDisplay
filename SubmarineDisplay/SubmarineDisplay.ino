@@ -57,28 +57,28 @@
 #define BOAT_STRIP_BEGIN_POS     0
 #define BOAT_STRIP_END_POS       63
 #define TORPEDO_STRIP_0_BEGIN_POS 64
-#define TORPEDO_STRIP_0_INTERSECT_POS 78
-#define BOAT_STRIP_0_INTERSECT_POS 20
+#define TORPEDO_STRIP_0_INTERSECT_POS 83
+#define BOAT_STRIP_0_INTERSECT_POS 21
 #define TORPEDO_STRIP_0_END_POS 86
 #define TORPEDO_STRIP_1_BEGIN_POS 87
-#define TORPEDO_STRIP_1_INTERSECT_POS 98
-#define BOAT_STRIP_1_INTERSECT_POS 25
+#define TORPEDO_STRIP_1_INTERSECT_POS 103
+#define BOAT_STRIP_1_INTERSECT_POS 28
 #define TORPEDO_STRIP_1_END_POS 106
 #define TORPEDO_STRIP_2_BEGIN_POS 107
-#define TORPEDO_STRIP_2_INTERSECT_POS 108
-#define BOAT_STRIP_2_INTERSECT_POS 35
+#define TORPEDO_STRIP_2_INTERSECT_POS 122
+#define BOAT_STRIP_2_INTERSECT_POS 34
 #define TORPEDO_STRIP_2_END_POS 126
 #define TORPEDO_STRIP_3_BEGIN_POS 127
-#define TORPEDO_STRIP_3_INTERSECT_POS 128
+#define TORPEDO_STRIP_3_INTERSECT_POS 143
 #define BOAT_STRIP_3_INTERSECT_POS 40
 #define TORPEDO_STRIP_3_END_POS 146
 #define TORPEDO_STRIP_4_BEGIN_POS 147
-#define TORPEDO_STRIP_4_INTERSECT_POS 148
-#define BOAT_STRIP_4_INTERSECT_POS 45
+#define TORPEDO_STRIP_4_INTERSECT_POS 166
+#define BOAT_STRIP_4_INTERSECT_POS 48
 #define TORPEDO_STRIP_4_END_POS 169
 #define TORPEDO_STRIP_5_BEGIN_POS 170
-#define TORPEDO_STRIP_5_INTERSECT_POS 168
-#define BOAT_STRIP_5_INTERSECT_POS 50
+#define TORPEDO_STRIP_5_INTERSECT_POS 196
+#define BOAT_STRIP_5_INTERSECT_POS 59
 #define TORPEDO_STRIP_5_END_POS 200
 
 
@@ -290,6 +290,41 @@ boolean advanceTorpedo() {
 
 long last_ship_increment_ms = -1;
 
+//note this has side effect of updating spritePos ... should return spritePos instead?
+boolean advanceSprite(int &spritePos, int spriteLen, CRGB spriteColor, int stripBegin, int stripEnd) {
+   // check time TODO
+  // increment position
+  if (spritePos == -1) {
+    spritePos = stripBegin;
+    for (int i = 0; i < spriteLen ; i++) {
+      leds[spritePos + i] = spriteColor;
+    }
+    
+  } else {
+    spritePos++;  
+  }
+  
+  if (spritePos > stripEnd) {
+    //RESET game state TODO
+     leds[stripEnd] = CRGB::Black; 
+    spritePos = -1; 
+    //TODO play miss sequence
+    return;
+  }
+
+  if ((spritePos - 1) >= stripBegin) {
+    leds[spritePos -1] = CRGB::Black;  
+    
+  }
+  
+  if (spritePos + spriteLen - 1 > stripEnd) {
+    return;
+  } else {
+    leds[spritePos + spriteLen - 1] = spriteColor;
+  }
+ 
+}
+
 
 boolean advanceShip() {
   // check time TODO
@@ -326,25 +361,39 @@ boolean advanceShip() {
   
 }
 
-// Determine if any torpedo pixel intersection of the current torpedo strip
-boolean torpedoAtIntersection() {
-  for (int torpedoPixel = torpedo_tail_current_pos; torpedoPixel < torpedo_tail_current_pos + getTorpedoLen(); torpedoPixel++) {
-    if (torpedoPixel == getTorpedoStripIntersect()) {
+
+// Determine if any torpedo pixel intersection of the given torpedo track
+boolean torpedoAtIntersection(int torpedoTailPos, int torpedoLen, int torpedoStripIntersect) {
+  for (int torpedoPixel = torpedoTailPos; torpedoPixel < torpedoTailPos + torpedoLen; torpedoPixel++) {
+    if (torpedoPixel == torpedoStripIntersect) {
         return true;
     }
   }
   return false;
 }
 
-// Determine if any boat pixel is at the boat strip intersection of the current torpedo track
-boolean boatAtIntersection() {
+
+// Determine if any torpedo pixel intersection of the current torpedo strip
+boolean torpedoAtIntersection() {
+  return torpedoAtIntersection(torpedo_tail_current_pos, getTorpedoLen(), getTorpedoStripIntersect());
+}
+
+// Determine if any boat pixel is at the given boat strip intersection 
+boolean boatAtIntersection(int boatStripIntersect) {
   for (int boatPixel = boat_tail_current_pos; boatPixel < boat_tail_current_pos + getBoatLen(); boatPixel++) {
-    if (boatPixel == getBoatStripIntersect()) {
+    if (boatPixel == boatStripIntersect) {
         return true;
     }
   }
   return false;
 }
+
+
+// Determine if any boat pixel is at the boat strip intersection of the current torpedo track
+boolean boatAtIntersection() {
+  return boatAtIntersection(getBoatStripIntersect());
+}
+
 boolean isCollision() {
   return (torpedoAtIntersection() && boatAtIntersection());
 }
@@ -387,6 +436,8 @@ void fadeall() { for(int i = 0; i < PIXEL_COUNT; i++) { leds[i].nscale8(250); } 
 
 
 void setup() {
+    Serial.begin(115200);
+  Serial.println("resetting");
   LEDS.addLeds<WS2812,DATA_PIN,RGB>(leds,PIXEL_COUNT);
 //  LEDS.setBrightness(84);
   LEDS.setBrightness(1);
@@ -404,7 +455,27 @@ void setup() {
   leds[TORPEDO_STRIP_4_END_POS] = CRGB::Red;
   leds[TORPEDO_STRIP_5_BEGIN_POS] = CRGB::Green;
   leds[TORPEDO_STRIP_5_END_POS] = CRGB::Red;
+
+//#define TORPEDO_STRIP_0_INTERSECT_POS 78
+//#define BOAT_STRIP_0_INTERSECT_POS 20
+
+  leds[TORPEDO_STRIP_0_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_0_INTERSECT_POS] = CRGB::Blue;
+  leds[TORPEDO_STRIP_1_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_1_INTERSECT_POS] = CRGB::Blue;
+  leds[TORPEDO_STRIP_2_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_2_INTERSECT_POS] = CRGB::Blue;
+  leds[TORPEDO_STRIP_3_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_3_INTERSECT_POS] = CRGB::Blue;
+  leds[TORPEDO_STRIP_4_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_4_INTERSECT_POS] = CRGB::Blue;
+  leds[TORPEDO_STRIP_5_INTERSECT_POS] = CRGB::Yellow;
+  leds[BOAT_STRIP_5_INTERSECT_POS] = CRGB::Blue;
+
+  
+
   FastLED.show(); 
+  delay(2500);
 
   boat_select_state = warship_selected; // TODO delete, this is only for test 
   torpedo_select_state = fast_selected; // TODO delete, this is only for test 
@@ -425,9 +496,56 @@ void setup() {
 
 }
 
+//test
+int torpedo_tail_current_pos0 = -1;
+int torpedo_tail_current_pos1 = -1;
+int torpedo_tail_current_pos2 = -1;
+int torpedo_tail_current_pos3 = -1;
+int torpedo_tail_current_pos4 = -1;
+int torpedo_tail_current_pos5 = -1;
+
 void loop() {
 
-  advanceShip();
+//  advanceShip();
+  advanceSprite(boat_tail_current_pos, getBoatLen(), CRGB::Blue, getBoatStripBegin(), getBoatStripEnd());
+  advanceSprite(torpedo_tail_current_pos0, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(0), getTorpedoStripEnd(0));
+  advanceSprite(torpedo_tail_current_pos1, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(1), getTorpedoStripEnd(1));
+  advanceSprite(torpedo_tail_current_pos2, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(2), getTorpedoStripEnd(2));
+  advanceSprite(torpedo_tail_current_pos3, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(3), getTorpedoStripEnd(3));
+  advanceSprite(torpedo_tail_current_pos4, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(4), getTorpedoStripEnd(4));
+  advanceSprite(torpedo_tail_current_pos5, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(5), getTorpedoStripEnd(5));
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos0, getTorpedoLen(), getTorpedoStripIntersect(0))
+      && boatAtIntersection(getBoatStripIntersect(0))) {
+    Serial.println("0 HIT");  
+  }
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos1, getTorpedoLen(), getTorpedoStripIntersect(1))
+      && boatAtIntersection(getBoatStripIntersect(1))) {
+    Serial.println("1 HIT");
+  }
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos2, getTorpedoLen(), getTorpedoStripIntersect(2))
+      && boatAtIntersection(getBoatStripIntersect(2))) {
+    Serial.println("2 HIT");
+  }
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos3, getTorpedoLen(), getTorpedoStripIntersect(3))
+      && boatAtIntersection(getBoatStripIntersect(3))) {
+    Serial.println("3 HIT");
+  }
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos4, getTorpedoLen(), getTorpedoStripIntersect(4))
+      && boatAtIntersection(getBoatStripIntersect(4))) {
+    Serial.println("4 HIT");
+  }
+
+  if (torpedoAtIntersection(torpedo_tail_current_pos5, getTorpedoLen(), getTorpedoStripIntersect(5))
+      && boatAtIntersection(getBoatStripIntersect(5))) {
+    Serial.println("5 HIT");
+  }
+
+
     FastLED.show(); 
 
   delay(200);
@@ -435,59 +553,7 @@ void loop() {
   static uint8_t hue = 0;
 
 
-//  for(int i = 0; i < PIXEL_COUNT; i++) {
-//    if (i == BOAT_STRIP_BEGIN_POS ||
-//      i == BOAT_STRIP_END_POS ||
-//      i == TORPEDO_STRIP_0_BEGIN_POS ||
-//      i == TORPEDO_STRIP_0_END_POS ||
-//      i == TORPEDO_STRIP_1_BEGIN_POS ||
-//      i == TORPEDO_STRIP_1_END_POS ||
-//      i == TORPEDO_STRIP_2_BEGIN_POS ||
-//      i == TORPEDO_STRIP_2_END_POS ||
-//      i == TORPEDO_STRIP_3_BEGIN_POS ||
-//      i == TORPEDO_STRIP_3_END_POS ||
-//      i == TORPEDO_STRIP_4_BEGIN_POS ||
-//      i == TORPEDO_STRIP_4_END_POS ||
-//      i == TORPEDO_STRIP_5_BEGIN_POS ||
-//      i == TORPEDO_STRIP_5_END_POS 
-//    ) {
-//        leds[i] = CHSV(hue++, 125, 255);
-//    } else {
-//      leds[i] = CRGB::Black;
-//    }
-//
-//
-//    // Wait a little bit before we loop around and do it again
-//
-//  }
-  
-  Serial.print("x");
-  // First slide the led in one direction
-//  for(int i = 0; i < PIXEL_COUNT; i++) {
-//    // Set the i'th led to red 
-//    leds[i] = CHSV(hue++, 255, 255);
-//    // Show the leds
-//    FastLED.show(); 
-//    // now that we've shown the leds, reset the i'th led to black
-//    // leds[i] = CRGB::Black;
-//    fadeall();
-//    // Wait a little bit before we loop around and do it again
-//    delay(10);
-//  }
-  Serial.print("x");
 
-  // Now go in the other direction.  
-//  for(int i = (PIXEL_COUNT)-1; i >= 0; i--) {
-//    // Set the i'th led to red 
-//    leds[i] = CHSV(hue++, 255, 255);
-//    // Show the leds
-//    FastLED.show();
-//    // now that we've shown the leds, reset the i'th led to black
-//    // leds[i] = CRGB::Black;
-//    fadeall();
-//    // Wait a little bit before we loop around and do it again
-//    delay(10);
-//  }
 
 //clearAllRGB();
 //selectTrack();
