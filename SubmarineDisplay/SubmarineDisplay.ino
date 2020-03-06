@@ -430,6 +430,16 @@ void clearLEDSection(int ledStart, int ledEnd) {
 }
 
 
+void resetTorpedo() {
+  torpedo_tail_current_pos = -1;
+  clearLEDSection(getTorpedoStripBegin(), getTorpedoStripEnd());
+}
+void resetBoat() {
+  boat_tail_current_pos = -1;
+  clearLEDSection(getBoatStripBegin(), getBoatStripEnd());
+}
+
+
 void setup() {
     Serial.begin(115200);
   Serial.println("resetting");
@@ -618,9 +628,10 @@ switch(currentGameState) {
     case TORPEDO_HIT :  ;
             // play hit sequence
             displayImpactSequence();
-            //CLEAR TORPEDO LEDS (TODO)
-            clearLEDSection(getTorpedoStripBegin(), getTorpedoStripEnd());
-            
+            //reset 
+            resetTorpedo();
+            resetBoat();
+                        
             // reset to WAITING_FOR_BOAT_AND_TORPEDO_SELECTION
              currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION; //todo any clean up state needed?
              break;
