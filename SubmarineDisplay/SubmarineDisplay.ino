@@ -47,12 +47,12 @@
 
 #define WARSHIP_LEN                  4
 #define MERCHANT_SHIP_LEN            4
-#define WARSHIP_SPEED_MS_INTERVAL    200
-#define MARCHANT_SPEED_MS_INTERVAL   100
+#define WARSHIP_SPEED_MS_INTERVAL    100
+#define MARCHANT_SPEED_MS_INTERVAL   200
 #define SLOW_TORPEDO_LEN             2
 #define FAST_TORPEDO_LEN             2
-#define FAST_TORPEDO_SPEED_MS_INTER  200
-#define SLOW_TORPEDO_SPEED_MS_INTER  100
+#define FAST_TORPEDO_SPEED_MS_INTER  50
+#define SLOW_TORPEDO_SPEED_MS_INTER  25
 
 #define SHIP_COLOR 255, 0, 0
 
@@ -300,10 +300,6 @@ void selectTrack() {
 }
 
 
-long last_torpedo_increment_ms = -1;
-
-
-long last_ship_increment_ms = -1;
 
 //note this has side effect of updating spritePos ... should return spritePos instead?
 boolean advanceSprite(int &spritePos, int spriteLen, CRGB spriteColor, int stripBegin, int stripEnd) {
@@ -337,31 +333,29 @@ boolean advanceSprite(int &spritePos, int spriteLen, CRGB spriteColor, int strip
   return true;
 }
 
+long last_ship_increment_ms = -1;
 
+// ret val of false means ran out of room
 boolean advanceShip() {
   // check time 
-  // TODO
-  
-  // increment position
-    advanceSprite(boat_tail_current_pos, getBoatLen(), CRGB::Blue, getBoatStripBegin(), getBoatStripEnd());
+  if (millis() - last_ship_increment_ms > getBoatSpeed()) {
+    last_ship_increment_ms = millis();
+    // increment position
+    return advanceSprite(boat_tail_current_pos, getBoatLen(), CRGB::Blue, getBoatStripBegin(), getBoatStripEnd());
+  }
+  return true;
 }
 
-int torpedo_tail_current_posX = -1;
+long last_torpedo_increment_ms = -1;
+
 boolean advanceTorpedo() {
 // check time
-// TODO
-  // increment position
-  Serial.println("advanceTorpedo");
-    Serial.println(selected_track);
-
-  Serial.println(torpedo_tail_current_pos);
-  Serial.println(getTorpedoLen());
-  Serial.println(getTorpedoStripBegin());
-  Serial.println(getTorpedoStripEnd());
-  
-//   return advanceSprite(torpedo_tail_current_posX, getTorpedoLen(), CRGB::Red, getTorpedoStripBegin(0), getTorpedoStripEnd(0));
-
+  if (millis() - last_torpedo_increment_ms > getTorpedoSpeed()) {
+    last_torpedo_increment_ms = millis();
+    // increment position
     return advanceSprite(torpedo_tail_current_pos, getTorpedoLen(), CRGB::White, getTorpedoStripBegin(), getTorpedoStripEnd());
+  }
+    return true;
 }
 
 
@@ -652,7 +646,7 @@ switch(currentGameState) {
 
     FastLED.show(); 
 
-  delay(200);
+//  delay(200);
 
   static uint8_t hue = 0;
 
