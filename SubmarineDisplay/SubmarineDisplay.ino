@@ -280,6 +280,8 @@ void clearSelectedTorpedoStrip() {
 //used when selecting track
 void lightTorpedoInitialPosition() {
   clearUnselectedTorpedoStrips();
+  clearSelectedTorpedoStrip();
+
 
   torpedo_tail_current_pos = getTorpedoStripBegin();
   for (int i = getTorpedoStripBegin(); i < (getTorpedoLen() + getTorpedoStripBegin()); i++) {
