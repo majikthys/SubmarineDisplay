@@ -29,29 +29,38 @@
 #define MERCHANT_VESSEL_BUTTON   6
 #define WARSHIP_BUTTON           7
 
-#define MERCHANT_VESSEL_BUTTON_LED   8
-#define WARSHIP_BUTTON_LED           9
-#define TORPEDO_FAST_BUTTON_LED      10
-#define TORPEDO_SLOW_BUTTON_LED      11
-#define START_BUTTON_LED             12
-#define FIRE_BUTTON_LED              13
 
-#define TORPEDO_0_SELECT             14
-#define TORPEDO_1_SELECT             15
-#define TORPEDO_2_SELECT             16
-#define TORPEDO_3_SELECT             17
-#define TORPEDO_4_SELECT             18
-#define TORPEDO_5_SELECT             19
+#define MERCHANT_VESSEL_BUTTON_LED   22
+#define WARSHIP_BUTTON_LED           23
+#define TORPEDO_FAST_BUTTON_LED      24
+#define TORPEDO_SLOW_BUTTON_LED      25
+#define START_BUTTON_LED             26
+#define FIRE_BUTTON_LED              27
+
+
+#define TORPEDO_0_SELECT             30
+#define TORPEDO_1_SELECT             31
+#define TORPEDO_2_SELECT             32
+#define TORPEDO_3_SELECT             33
+#define TORPEDO_4_SELECT             34
+#define TORPEDO_5_SELECT             35
 
 
 #define WARSHIP_LEN                  5
 #define MERCHANT_SHIP_LEN            4
 #define WARSHIP_SPEED_MS_INTERVAL    100
 #define MARCHANT_SPEED_MS_INTERVAL   200
-#define SLOW_TORPEDO_LEN             2
+//TODO try larger slow torpedo
+#define SLOW_TORPEDO_LEN             3 
 #define FAST_TORPEDO_LEN             2
 #define FAST_TORPEDO_SPEED_MS_INTER  50
-#define SLOW_TORPEDO_SPEED_MS_INTER  25
+#define SLOW_TORPEDO_SPEED_MS_INTER  100
+
+#define BOAT_LED_FLASH_MS_INTERVAL          750
+#define TORPEDO_LED_FLASH_MS_INTERVAL       600
+#define START_LED_FLASH_MS_INTERVAL          250
+#define FIRE_LED_FLASH_MS_INTERVAL          250
+
 
 #define TORPEDO_CRGB CRGB::White
 #define BOAT_CRGB CRGB::Blue
@@ -106,8 +115,10 @@ enum GAME_STATE {
   WAITING_FOR_TORPEDO_END,
   TORPEDO_HIT,
   TORPEDO_MISS,
+  TORPEDO_MISS_WAITING_FOR_BOAT,
   BOAT_COMPLETE_WAITING_FOR_TORPEDO,
-  BOAT_COMPLETE
+  BOAT_COMPLETE,
+  RESET_GAME
 };
 
 //TODO change 
@@ -341,6 +352,96 @@ boolean selectTrack() {
   return true;
 }
 
+boolean merchantIsIlluminated = false;
+boolean slowTorpedoIsIlluminated = false;
+boolean startIsIlluminated = false;
+boolean fireIsIlluminated = false;
+long last_boat_flash = -1;
+long last_torpedo_flash = -1;
+long last_start_button_flash = -1;
+long last_fire_button_flash = -1;
+
+#define START_BUTTON_LED             26
+#define FIRE_BUTTON_LED              27
+
+
+
+void flashLED(boolean &ledIsIlluminated, long &last_alternate, long interval, int ledA) {
+    if (millis() - last_alternate > interval) {  
+      last_alternate = millis();
+      if (ledIsIlluminated) {
+        digitalWrite(ledA, LOW);
+        ledIsIlluminated = false;
+      } else {
+        digitalWrite(ledA, HIGH);
+        ledIsIlluminated = true;
+      }
+    }  
+}
+
+void flashStartLED() {
+  flashLED(startIsIlluminated, last_start_button_flash, START_LED_FLASH_MS_INTERVAL, START_BUTTON_LED);
+}
+
+void flashFireLED() {
+  flashLED(fireIsIlluminated, last_fire_button_flash, FIRE_LED_FLASH_MS_INTERVAL, FIRE_BUTTON_LED);
+}
+
+void flashAlternateLEDs(boolean &ledIsIlluminated, long &last_alternate, long interval, int ledA, int ledB) {
+    if (millis() - last_alternate > interval) {  
+      last_alternate = millis();
+      if (ledIsIlluminated) {
+        digitalWrite(ledA, LOW);
+        digitalWrite(ledB, HIGH);   
+        ledIsIlluminated = false;
+      } else {
+        digitalWrite(ledA, HIGH);
+        digitalWrite(ledB, LOW);   
+        ledIsIlluminated = true;
+      }
+    }  
+}
+
+void flashTorpedoButtons() {
+  flashAlternateLEDs(slowTorpedoIsIlluminated, last_torpedo_flash, TORPEDO_LED_FLASH_MS_INTERVAL, 
+                    TORPEDO_SLOW_BUTTON_LED, TORPEDO_FAST_BUTTON_LED);
+}
+                    
+void flashBoatButtons() {
+  flashAlternateLEDs(merchantIsIlluminated, last_boat_flash, BOAT_LED_FLASH_MS_INTERVAL, 
+                    MERCHANT_VESSEL_BUTTON_LED, WARSHIP_BUTTON_LED);
+//  if (millis() - last_boat_flash > BOAT_LED_FLASH_MS_INTERVAL) {  
+//    if (merchantIsIlluminated) {
+//      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
+//      digitalWrite(WARSHIP_BUTTON_LED, HIGH);   
+//      merchantIsIlluminated = false;
+//    } else {
+//      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
+//      digitalWrite(WARSHIP_BUTTON_LED, LOW);   
+//      merchantIsIlluminated = true;
+//    }
+//  }  
+}
+
+void resetButtonLEDs() {
+  digitalWrite(START_BUTTON_LED, LOW);
+  digitalWrite(FIRE_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+  digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
+  digitalWrite(WARSHIP_BUTTON_LED, LOW);
+  
+  merchantIsIlluminated = false;
+  slowTorpedoIsIlluminated = false;
+  startIsIlluminated = false;
+  fireIsIlluminated = false;
+  last_boat_flash = -1;
+  last_torpedo_flash = -1;
+  last_start_button_flash = -1;
+  last_fire_button_flash = -1;
+}
+
+
 void updateBoatButtonLEDs() {
   switch(boat_select_state) {
     case merchant_selected : 
@@ -356,6 +457,25 @@ void updateBoatButtonLEDs() {
         digitalWrite(WARSHIP_BUTTON_LED, LOW);    
   }
 }
+
+
+void updateTorpedButtonLEDs() {
+  switch(torpedo_select_state) {
+    case fast_selected : 
+        digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
+        digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);    
+        return;
+    case slow_selected : 
+        digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+        digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);    
+        return;
+    default: 
+        digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+        digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);    
+  }
+}
+
+
 
 boolean selectBoat() {
   //TODO detect selector switch states then call selectTrack(int track)
@@ -419,15 +539,10 @@ boolean selectTorpedo() {
 //  updateTorpedoButtonLEDs(); TODO
   //display boat
   lightTorpedoInitialPosition();
+  updateTorpedButtonLEDs();
   return true;
 }
 
-//
-//enum torpedo_select_states {
-//  fast_selected,
-//  slow_selected,
-//  no_torpedo_selected
-//};
 
 
 //note this has side effect of updating spritePos ... should return spritePos instead?
@@ -629,6 +744,16 @@ void setup() {
   pinMode(START_BUTTON, INPUT_PULLUP);
   pinMode(FIRE_BUTTON, INPUT_PULLUP);
 
+
+  pinMode(MERCHANT_VESSEL_BUTTON_LED, OUTPUT);
+  pinMode(WARSHIP_BUTTON_LED, OUTPUT);
+  pinMode(TORPEDO_FAST_BUTTON_LED, OUTPUT);
+  pinMode(TORPEDO_SLOW_BUTTON_LED, OUTPUT);
+  pinMode(START_BUTTON_LED, OUTPUT);
+  pinMode(FIRE_BUTTON_LED, OUTPUT);
+
+  
+//  currentGameState = DEMO_TEST;
 }
 
 //test
@@ -687,7 +812,43 @@ void loop() {
 //  advanceShip();
 
 switch(currentGameState) {
-    case DEMO_TEST : demoTestAdvance();
+    case DEMO_TEST : 
+      Serial.println("Demo test");
+      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
+      delay(200);
+      digitalWrite(WARSHIP_BUTTON_LED, HIGH);
+      delay(200);
+      digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
+      delay(200);
+      digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);
+      delay(200);
+      digitalWrite(START_BUTTON_LED, HIGH);
+      delay(200);
+      digitalWrite(FIRE_BUTTON_LED, HIGH);
+      delay(200);
+
+
+
+      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
+      delay(50);
+      digitalWrite(WARSHIP_BUTTON_LED, LOW);
+      delay(50);
+      digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+      delay(50);
+      digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
+      delay(50);
+      digitalWrite(START_BUTTON_LED, LOW);
+      delay(50);
+      digitalWrite(FIRE_BUTTON_LED, LOW);
+      delay(50);
+
+           // demoTestAdvance();
+//            flashFireLED();         
+//                        flashStartLED();              
+//     
+//               flashBoatButtons();
+//              flashTorpedoButtons();
+
              break;       // and exits the switch
     case WAITING_FOR_BOAT_AND_TORPEDO_SELECTION :  ;
           // CLEAR LEDs
@@ -700,7 +861,7 @@ switch(currentGameState) {
            // poll boat select
            if (!selectBoat()) {
               // flash boat select
-              //TODO
+              flashBoatButtons();
            } else {
               currentGameState = WAITING_FOR_TORPEDO_SELECTION_ONLY;
               break;
@@ -709,7 +870,7 @@ switch(currentGameState) {
            // poll torpedo select
            if (!selectTorpedo()) {
               // flash torpedo select
-              //TODO
+              flashTorpedoButtons();
            } else {
               currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
               break;
@@ -724,13 +885,15 @@ switch(currentGameState) {
              break;
     case WAITING_FOR_BOAT_SELECTION_ONLY :  ;
            Serial.println("WAITING_FOR_BOAT_SELECTION_ONLY");
-
+            
+            
+            
             // poll torpedo select
             selectTorpedo();
             
            if (!selectBoat()) {
               // flash boat select
-              //TODO
+              flashBoatButtons();
            } else {
               currentGameState = WAITING_FOR_START;
               break;
@@ -746,11 +909,11 @@ switch(currentGameState) {
                Serial.println("WAITING_FOR_TORPEDO_SELECTION_ONLY");
             // check for boat changes
             selectBoat();
-
+            
            // poll torpedo select
            if (!selectTorpedo()) {
               // flash torpedo select
-              //TODO
+              flashTorpedoButtons();
            } else {
               currentGameState = WAITING_FOR_START;
               break;
@@ -765,18 +928,23 @@ switch(currentGameState) {
     case WAITING_FOR_START :  ;
                    Serial.println("WAITING_FOR_START");
 
-            //flash start button
-            //TODO 
+
             
             //check start button
             if (digitalRead(START_BUTTON) == LOW) {
               currentGameState = WAITING_FOR_TORPEDO_FIRE;
               digitalWrite(START_BUTTON_LED, LOW);
               break;
+            } else {
+              //flash start button
+              flashStartLED();
             }
             // check for boat changes
             selectBoat();
-
+            
+            //change torpedo
+            selectTorpedo();
+            
             //check for torpedo track changes
             selectTrack();
 
@@ -787,13 +955,13 @@ switch(currentGameState) {
             // poll fire button
             if (digitalRead(FIRE_BUTTON) == LOW) {
               currentGameState = WAITING_FOR_TORPEDO_END;
+            } else {
+              //flash Fire button
+              flashFireLED();              
             }
 
             //check for torpedo track changes
             selectTrack();
-
-            // flash fire button
-            //  TODO
 
             // check timeout
             // TODO
@@ -801,7 +969,7 @@ switch(currentGameState) {
             // advance boat
             if (!advanceShip()) {
               // todo what to do if boat completes w/o fire? Reset or scroll boat again?
-              currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION; //todo any clean up state needed?
+              currentGameState = RESET_GAME; 
             }
              break;
     case WAITING_FOR_TORPEDO_END :  ;
@@ -827,21 +995,20 @@ switch(currentGameState) {
             resetTorpedo();
             resetBoat();
                         
-            // reset to WAITING_FOR_BOAT_AND_TORPEDO_SELECTION
-             currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION; //todo any clean up state needed?
+            // reset to 
+             currentGameState = RESET_GAME; //todo any clean up state needed?
 
              break;
     case TORPEDO_MISS :  ;
             // play miss sequence
             displayMissSequence(); 
-
-            // TODO add BOAT RUnOUT STATE instead of:
-            // advance boat 
-            if (!advanceShip()) {
-              currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION; 
-            }
+            currentGameState = TORPEDO_MISS_WAITING_FOR_BOAT; 
             
-
+             break;
+    case TORPEDO_MISS_WAITING_FOR_BOAT :  ;
+            if (!advanceShip()) {
+              currentGameState = RESET_GAME; 
+            }
              break;
     case BOAT_COMPLETE_WAITING_FOR_TORPEDO :  ;
             // advance torpedo 
@@ -850,9 +1017,14 @@ switch(currentGameState) {
             }
 
              break;
-
-// TODO add BOAT RUnOUT STATE
-//TODO add reset state, to clear boat and torpedo selection
+    case RESET_GAME :  ;
+        boat_select_state = no_boat_selected;
+        torpedo_select_state = no_torpedo_selected;
+        clearAllTorpedoStrips();
+        clearBoatStrip();
+        resetButtonLEDs();
+        currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
+        break;
 
 }
 
@@ -861,7 +1033,7 @@ switch(currentGameState) {
 
     FastLED.show(); 
 //TODO kill (for testing)
-  delay(200);
+ // delay(200);
 
   static uint8_t hue = 0;
 
