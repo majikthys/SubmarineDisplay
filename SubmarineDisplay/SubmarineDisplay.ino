@@ -1,54 +1,22 @@
 #include <FastLED.h>
 
-
+// TODO FASTLED RGB TUNING
 // TODO make fritzing diagram 
 // TODO fix underscore variables to camel case
 
-#define PIXEL_COUNT 200
-#define DATA_PIN 53
-#define CLOCK_PIN 13
-
-#define FIRE_BUTTON              0
-#define TORPEDO_FAST_BUTTON      3
-#define TORPEDO_SLOW_BUTTON      4
-#define START_BUTTON             5
-#define MERCHANT_VESSEL_BUTTON   6
-#define WARSHIP_BUTTON           7
-
-
-#define MERCHANT_VESSEL_BUTTON_LED   22
-#define WARSHIP_BUTTON_LED           23
-#define TORPEDO_FAST_BUTTON_LED      24
-#define TORPEDO_SLOW_BUTTON_LED      25
-#define START_BUTTON_LED             26
-#define FIRE_BUTTON_LED              27
-
-#define STRIP_0_HIT_LED              A8
-#define STRIP_1_HIT_LED              A9
-#define STRIP_2_HIT_LED              A10
-#define STRIP_3_HIT_LED              A11
-#define STRIP_4_HIT_LED              A12
-#define STRIP_5_HIT_LED              A13
-
-
-#define TORPEDO_0_SELECT             A0
-#define TORPEDO_1_SELECT             A1
-#define TORPEDO_2_SELECT             A2
-#define TORPEDO_3_SELECT             A3
-#define TORPEDO_4_SELECT             A4
-#define TORPEDO_5_SELECT             A5
-
-
-#define WARSHIP_LEN                  5
-#define MERCHANT_SHIP_LEN            4
+// BOAT LENGTHS & SPEEDS
+#define WARSHIP_LENGTH                  5
+#define MERCHANT_SHIP_LENGTH            4
 #define WARSHIP_SPEED_MS_INTERVAL    100
 #define MARCHANT_SPEED_MS_INTERVAL   200
-//TODO try larger slow torpedo
+
+// TORPEDO LENGTHS & SPEEDS
 #define SLOW_TORPEDO_LEN             3 
 #define FAST_TORPEDO_LEN             2
 #define FAST_TORPEDO_SPEED_MS_INTER  50
 #define SLOW_TORPEDO_SPEED_MS_INTER  100
 
+// BUTTON AND HIT LIGHT FLASH SPEEDS
 #define BOAT_LED_FLASH_MS_INTERVAL   750
 #define TORPEDO_LED_FLASH_MS_INTERVAL 600
 #define START_LED_FLASH_MS_INTERVAL  250
@@ -57,21 +25,54 @@
 #define HIT_FLASH_COUNT              4
 
 
+// INPUT PINS for buttons and torpedo selectors
+#define FIRE_BUTTON              0
+#define TORPEDO_FAST_BUTTON      3
+#define TORPEDO_SLOW_BUTTON      4
+#define START_BUTTON             5
+#define MERCHANT_VESSEL_BUTTON   6
+#define WARSHIP_BUTTON           7
+#define TORPEDO_0_SELECT             A0
+#define TORPEDO_1_SELECT             A1
+#define TORPEDO_2_SELECT             A2
+#define TORPEDO_3_SELECT             A3
+#define TORPEDO_4_SELECT             A4
+#define TORPEDO_5_SELECT             A5
+
+// Simple light output pins for button lights and 
+// the hit indicators lights
+#define MERCHANT_VESSEL_BUTTON_LED   22
+#define WARSHIP_BUTTON_LED           23
+#define TORPEDO_FAST_BUTTON_LED      24
+#define TORPEDO_SLOW_BUTTON_LED      25
+#define START_BUTTON_LED             26
+#define FIRE_BUTTON_LED              27
+#define STRIP_0_HIT_LED              A8
+#define STRIP_1_HIT_LED              A9
+#define STRIP_2_HIT_LED              A10
+#define STRIP_3_HIT_LED              A11
+#define STRIP_4_HIT_LED              A12
+#define STRIP_5_HIT_LED              A13
+
+//THE neopixel data pin
+#define LED_DATA_PIN 53
+#define PIXEL_COUNT              201
+
+// Colors
 #define TORPEDO_CRGB CRGB::White
 #define BOAT_CRGB CRGB::Blue
 
+// Strip brightnetss 1 to 255
+#define LED_BRIGHTNESS           1
 
-// LEDS IN STRIP
-// 64 //boat
-// 23 //0 
-// 20 //1
-// 19 //2
-// 20 //3
-// 23 //4
-// 31 //5
-#define PIXEL_COUNT              201
+// Boat strip begin and end positions
 #define BOAT_STRIP_BEGIN_POS     0
 #define BOAT_STRIP_END_POS       63
+
+// For each torpedo LED strip position defines positions for begin, end, 
+// and the point it intersects with boat strip. We also define the 
+// position where the boat strip intersects with the torpedo strip.
+
 #define TORPEDO_STRIP_0_BEGIN_POS 64
 #define TORPEDO_STRIP_0_INTERSECT_POS 83
 #define BOAT_STRIP_0_INTERSECT_POS 21
@@ -97,9 +98,10 @@
 #define BOAT_STRIP_5_INTERSECT_POS 59
 #define TORPEDO_STRIP_5_END_POS 200
 
-#define TRACK_COUNT 6
+// number of torpedo strips
+#define TORPEDO_STRIP_COUNT 6
 
-
+// Game states, for a low key state machine
 enum GAME_STATE {
   DEMO_TEST,
   WAITING_FOR_BOAT_AND_TORPEDO_SELECTION,
@@ -116,9 +118,8 @@ enum GAME_STATE {
   RESET_GAME
 };
 
-//TODO change 
+// Inital game state is waiting or boat
 GAME_STATE currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
-//GAME_STATE currentGameState = DEMO_TEST;
 
 // Define the array of leds
 CRGB leds[PIXEL_COUNT];
@@ -154,22 +155,22 @@ int getTorpedoStripEnd(int torpedo) {
 }
 
 // SELECTED TORPEDO TRACK 0-5
-int selected_track = 0; 
+int currentSelectedTrack = 0; 
 
 int getTorpedoStripBegin() {
-  return getTorpedoStripBegin(selected_track);
+  return getTorpedoStripBegin(currentSelectedTrack);
 }
 
 int getTorpedoStripIntersect() {
-  return getTorpedoStripIntersect(selected_track); 
+  return getTorpedoStripIntersect(currentSelectedTrack); 
 }
 
 int getBoatStripIntersect() {
-  return getBoatStripIntersect(selected_track);
+  return getBoatStripIntersect(currentSelectedTrack);
 }
 
 int getTorpedoStripEnd() {
-  return getTorpedoStripEnd(selected_track);
+  return getTorpedoStripEnd(currentSelectedTrack);
 }
 
 int getBoatStripBegin() {
@@ -180,33 +181,32 @@ int getBoatStripEnd() {
   return BOAT_STRIP_END_POS;
 }
 
-
-enum boat_select_states {
+enum BOAT_SELECT_STATES {
   merchant_selected,
   warship_selected,
   no_boat_selected
 };
 
-enum torpedo_select_states {
+enum TORPEDO_SELECT_STATES {
   fast_selected,
   slow_selected,
   no_torpedo_selected
 };
 
-boat_select_states boat_select_state = no_boat_selected;
-torpedo_select_states torpedo_select_state = no_torpedo_selected;
+BOAT_SELECT_STATES currentBoatSelectState = no_boat_selected;
+TORPEDO_SELECT_STATES currentTorpedoSelectState = no_torpedo_selected;
 
 
 int getBoatLen() {
-  switch(boat_select_state) {
-    case merchant_selected : return MERCHANT_SHIP_LEN;
-    case warship_selected : return WARSHIP_LEN;
+  switch(currentBoatSelectState) {
+    case merchant_selected : return MERCHANT_SHIP_LENGTH;
+    case warship_selected : return WARSHIP_LENGTH;
     default: return 0;
   }
 }
 
 int getBoatSpeed() {
-  switch(boat_select_state) {
+  switch(currentBoatSelectState) {
     case merchant_selected : return MARCHANT_SPEED_MS_INTERVAL;
     case warship_selected : return WARSHIP_SPEED_MS_INTERVAL;
     default: return 0;
@@ -215,7 +215,7 @@ int getBoatSpeed() {
 
 
 int getTorpedoLen() {
-  switch(torpedo_select_state) {
+  switch(currentTorpedoSelectState) {
     case slow_selected : return SLOW_TORPEDO_LEN;
     case fast_selected : return FAST_TORPEDO_LEN;
     default: return 0;
@@ -223,7 +223,7 @@ int getTorpedoLen() {
 }
 
 int getTorpedoSpeed() {
-  switch(torpedo_select_state) {
+  switch(currentTorpedoSelectState) {
     case slow_selected : return SLOW_TORPEDO_SPEED_MS_INTER;
     case fast_selected : return FAST_TORPEDO_SPEED_MS_INTER;
     default: return 0;
@@ -232,20 +232,21 @@ int getTorpedoSpeed() {
 
 
 
-//TODO Move
+//TODO Move or remove timeout
 #define DEFAULT_SELECTION_TIMEOUT 2000
 #define DEFAULT_LIGHT_ALTERNATION_RATE 1000
 
+//TODO complete or delete timout
 long last_selection_time = -1;
 long selection_timeout = DEFAULT_SELECTION_TIMEOUT;
 long standby_light_alternation_rate = DEFAULT_LIGHT_ALTERNATION_RATE;
 
 
-int torpedo_tail_current_pos = -1;
+// Tracking position of torpedo
+int torpedoTailCurrentPos = -1;
 
-
-
-int boat_tail_current_pos = -1;
+// Tracking position of boat
+int boatTailCurrentPos = -1;
 
 void clearLEDSection(int ledStart, int ledEnd) {
     for(int i = ledStart; i <= ledEnd; i++) { 
@@ -258,15 +259,15 @@ void clearTorpedoStrip(int trackNum) {
 }
 
 void clearUnselectedTorpedoStrips() {
-  for (int i = 0; i < TRACK_COUNT; i++) {
-    if (i != selected_track) {
+  for (int i = 0; i < TORPEDO_STRIP_COUNT; i++) {
+    if (i != currentSelectedTrack) {
       clearTorpedoStrip(i);
     }
   }
 }
 
 void clearAllTorpedoStrips() {
-  for (int i = 0; i < TRACK_COUNT; i++) {
+  for (int i = 0; i < TORPEDO_STRIP_COUNT; i++) {
     clearTorpedoStrip(i);
   }
 }
@@ -281,7 +282,7 @@ void lightTorpedoInitialPosition() {
   clearSelectedTorpedoStrip();
 
 
-  torpedo_tail_current_pos = getTorpedoStripBegin();
+  torpedoTailCurrentPos = getTorpedoStripBegin();
   for (int i = getTorpedoStripBegin(); i < (getTorpedoLen() + getTorpedoStripBegin()); i++) {
     leds[i]=TORPEDO_CRGB;
   }
@@ -294,14 +295,14 @@ void clearBoatStrip() {
 void lightBoatInitialPosition() {
   clearBoatStrip();
 
-  boat_tail_current_pos = getBoatStripBegin();
+  boatTailCurrentPos = getBoatStripBegin();
   for (int i = getBoatStripBegin(); i < (getBoatLen() + getBoatStripBegin()); i++) {
     leds[i]=BOAT_CRGB;
   }
 }
 
 void selectTrack(int track) {
-    selected_track = track;
+    currentSelectedTrack = track;
 }
 
 // select track and updates display
@@ -309,7 +310,7 @@ void selectTrack(int track) {
 boolean selectTrack() {
   //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
-  int lastSelectedTrack = selected_track;
+  int lastSelectedTrack = currentSelectedTrack;
   if (digitalRead(TORPEDO_0_SELECT) == LOW) {
     selectTrack(0);
     selectCount++;
@@ -345,7 +346,7 @@ boolean selectTrack() {
     Serial.println("ERROR: More than one track selected. Selected highest.");
   } 
 
-  if (lastSelectedTrack == selected_track) {
+  if (lastSelectedTrack == currentSelectedTrack) {
     return false;
   }
   lightTorpedoInitialPosition();
@@ -356,16 +357,13 @@ boolean merchantIsIlluminated = false;
 boolean slowTorpedoIsIlluminated = false;
 boolean startIsIlluminated = false;
 boolean fireIsIlluminated = false;
-long last_boat_flash = -1;
-long last_torpedo_flash = -1;
-long last_start_button_flash = -1;
-long last_fire_button_flash = -1;
-
-#define START_BUTTON_LED             26
-#define FIRE_BUTTON_LED              27
+long lastBoatFlashTime = -1;
+long lastTorpedoFlashTime = -1;
+long lastStartButtonFlashTime = -1;
+long lastFireButtonFlashTime = -1;
 
 
-
+// Note side effects on ledIsIlluminated and last_alternate
 void flashLED(boolean &ledIsIlluminated, long &last_alternate, long interval, int ledA) {
     if (millis() - last_alternate > interval) {  
       last_alternate = millis();
@@ -380,11 +378,11 @@ void flashLED(boolean &ledIsIlluminated, long &last_alternate, long interval, in
 }
 
 void flashStartLED() {
-  flashLED(startIsIlluminated, last_start_button_flash, START_LED_FLASH_MS_INTERVAL, START_BUTTON_LED);
+  flashLED(startIsIlluminated, lastStartButtonFlashTime, START_LED_FLASH_MS_INTERVAL, START_BUTTON_LED);
 }
 
 void flashFireLED() {
-  flashLED(fireIsIlluminated, last_fire_button_flash, FIRE_LED_FLASH_MS_INTERVAL, FIRE_BUTTON_LED);
+  flashLED(fireIsIlluminated, lastFireButtonFlashTime, FIRE_LED_FLASH_MS_INTERVAL, FIRE_BUTTON_LED);
 }
 
 void flashAlternateLEDs(boolean &ledIsIlluminated, long &last_alternate, long interval, int ledA, int ledB) {
@@ -403,24 +401,13 @@ void flashAlternateLEDs(boolean &ledIsIlluminated, long &last_alternate, long in
 }
 
 void flashTorpedoButtons() {
-  flashAlternateLEDs(slowTorpedoIsIlluminated, last_torpedo_flash, TORPEDO_LED_FLASH_MS_INTERVAL, 
+  flashAlternateLEDs(slowTorpedoIsIlluminated, lastTorpedoFlashTime, TORPEDO_LED_FLASH_MS_INTERVAL, 
                     TORPEDO_SLOW_BUTTON_LED, TORPEDO_FAST_BUTTON_LED);
 }
                     
 void flashBoatButtons() {
-  flashAlternateLEDs(merchantIsIlluminated, last_boat_flash, BOAT_LED_FLASH_MS_INTERVAL, 
+  flashAlternateLEDs(merchantIsIlluminated, lastBoatFlashTime, BOAT_LED_FLASH_MS_INTERVAL, 
                     MERCHANT_VESSEL_BUTTON_LED, WARSHIP_BUTTON_LED);
-//  if (millis() - last_boat_flash > BOAT_LED_FLASH_MS_INTERVAL) {  
-//    if (merchantIsIlluminated) {
-//      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
-//      digitalWrite(WARSHIP_BUTTON_LED, HIGH);   
-//      merchantIsIlluminated = false;
-//    } else {
-//      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
-//      digitalWrite(WARSHIP_BUTTON_LED, LOW);   
-//      merchantIsIlluminated = true;
-//    }
-//  }  
 }
 
 void resetButtonLEDs() {
@@ -435,15 +422,15 @@ void resetButtonLEDs() {
   slowTorpedoIsIlluminated = false;
   startIsIlluminated = false;
   fireIsIlluminated = false;
-  last_boat_flash = -1;
-  last_torpedo_flash = -1;
-  last_start_button_flash = -1;
-  last_fire_button_flash = -1;
+  lastBoatFlashTime = -1;
+  lastTorpedoFlashTime = -1;
+  lastStartButtonFlashTime = -1;
+  lastFireButtonFlashTime = -1;
 }
 
 
 void updateBoatButtonLEDs() {
-  switch(boat_select_state) {
+  switch(currentBoatSelectState) {
     case merchant_selected : 
         digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
         digitalWrite(WARSHIP_BUTTON_LED, LOW);    
@@ -460,7 +447,7 @@ void updateBoatButtonLEDs() {
 
 
 void updateTorpedButtonLEDs() {
-  switch(torpedo_select_state) {
+  switch(currentTorpedoSelectState) {
     case fast_selected : 
         digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
         digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);    
@@ -480,25 +467,25 @@ void updateTorpedButtonLEDs() {
 boolean selectBoat() {
   //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
-  boat_select_states lastSelected = boat_select_state;
+  BOAT_SELECT_STATES lastSelected = currentBoatSelectState;
 
   if (digitalRead(MERCHANT_VESSEL_BUTTON) == LOW) {
     Serial.println("PRESSED MERCHANT_VESSEL_BUTTON");
     selectCount++;
-    boat_select_state = merchant_selected;
+    currentBoatSelectState = merchant_selected;
   } 
   
   if (digitalRead(WARSHIP_BUTTON) == LOW) {
     Serial.println("PRESSED WARSHIP_BUTTON");
     selectCount++;
-    boat_select_state = warship_selected;
+    currentBoatSelectState = warship_selected;
   }
 
   //log error if selectedCount > 1
   if (selectCount > 1) {
     Serial.println("ERROR: More than one SHIP selected. Selected warship.");
   } 
-  if (lastSelected == boat_select_state) {
+  if (lastSelected == currentBoatSelectState) {
     return false; 
   } 
 
@@ -513,31 +500,29 @@ boolean selectBoat() {
 boolean selectTorpedo() {
   //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
-  torpedo_select_states lastSelected = torpedo_select_state;
+  TORPEDO_SELECT_STATES lastSelected = currentTorpedoSelectState;
 
   if (digitalRead(TORPEDO_FAST_BUTTON) == LOW) {
     Serial.println("PRESSED TORPEDO_FAST_BUTTON");
     selectCount++;
-    torpedo_select_state = fast_selected;
+    currentTorpedoSelectState = fast_selected;
   } 
   
   if (digitalRead(TORPEDO_SLOW_BUTTON) == LOW) {
     Serial.println("PRESSED TORPEDO_SLOW_BUTTON");
     selectCount++;
-    torpedo_select_state = slow_selected;
+    currentTorpedoSelectState = slow_selected;
   }
 
   //log error if selectedCount > 1
   if (selectCount > 1) {
     Serial.println("ERROR: More than one TORPEDO selected. Selected slow.");
   } 
-  if (lastSelected == torpedo_select_state) {
+  if (lastSelected == currentTorpedoSelectState) {
     return false; 
   } 
 
   //update selection buttons
-//  updateTorpedoButtonLEDs(); TODO
-  //display boat
   lightTorpedoInitialPosition();
   updateTorpedButtonLEDs();
   return true;
@@ -585,7 +570,7 @@ boolean advanceShip() {
   if (millis() - last_ship_increment_ms > getBoatSpeed()) {
     last_ship_increment_ms = millis();
     // increment position
-    return advanceSprite(boat_tail_current_pos, getBoatLen(), BOAT_CRGB, getBoatStripBegin(), getBoatStripEnd());
+    return advanceSprite(boatTailCurrentPos, getBoatLen(), BOAT_CRGB, getBoatStripBegin(), getBoatStripEnd());
   }
   return true;
 }
@@ -597,7 +582,7 @@ boolean advanceTorpedo() {
   if (millis() - last_torpedo_increment_ms > getTorpedoSpeed()) {
     last_torpedo_increment_ms = millis();
     // increment position
-    return advanceSprite(torpedo_tail_current_pos, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(), getTorpedoStripEnd());
+    return advanceSprite(torpedoTailCurrentPos, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(), getTorpedoStripEnd());
   }
     return true;
 }
@@ -616,12 +601,12 @@ boolean torpedoAtIntersection(int torpedoTailPos, int torpedoLen, int torpedoStr
 
 // Determine if any torpedo pixel intersection of the current torpedo strip
 boolean torpedoAtIntersection() {
-  return torpedoAtIntersection(torpedo_tail_current_pos, getTorpedoLen(), getTorpedoStripIntersect());
+  return torpedoAtIntersection(torpedoTailCurrentPos, getTorpedoLen(), getTorpedoStripIntersect());
 }
 
 // Determine if any boat pixel is at the given boat strip intersection 
 boolean boatAtIntersection(int boatStripIntersect) {
-  for (int boatPixel = boat_tail_current_pos; boatPixel < boat_tail_current_pos + getBoatLen(); boatPixel++) {
+  for (int boatPixel = boatTailCurrentPos; boatPixel < boatTailCurrentPos + getBoatLen(); boatPixel++) {
     if (boatPixel == boatStripIntersect) {
         return true;
     }
@@ -650,14 +635,11 @@ void displayImpactSequence(int track) {
     delay(HIT_FLASH_MS_INTERVAL);    
   }
   //TODO flash LED button
-  // animate star
-
-  //TODO Remove:
-  
+  // animate star  
 }
 
 void displayImpactSequence() {
-  displayImpactSequence(selected_track);
+  displayImpactSequence(currentSelectedTrack);
 }
 
 void displayMissSequence() {
@@ -669,29 +651,26 @@ void displayMissSequence() {
 
 }
 
-
-
-//TODO delete this
-void fadeall() { for(int i = 0; i < PIXEL_COUNT; i++) { leds[i].nscale8(250); } }
-
-
-
+// Reset torpedo positiona and clear LEDS
 void resetTorpedo() {
-  torpedo_tail_current_pos = -1;
+  torpedoTailCurrentPos = -1;
   clearSelectedTorpedoStrip();
 }
+
+// Reset boat positiona and clear LEDS
 void resetBoat() {
-  boat_tail_current_pos = -1;
+  boatTailCurrentPos = -1;
   clearBoatStrip();
 }
 
 
 void setup() {
-    Serial.begin(115200);
+  Serial.begin(115200);
   Serial.println("resetting");
-  LEDS.addLeds<WS2812,DATA_PIN,RGB>(leds,PIXEL_COUNT);
-//  LEDS.setupdateBoatButtonLEDsness(84);
-  LEDS.setupdateBoatButtonLEDsness(1);
+  LEDS.addLeds<WS2812,LED_DATA_PIN,RGB>(leds,PIXEL_COUNT);
+  LEDS.setBrightness(LED_BRIGHTNESS);
+
+  // Show start stops and intersections for debug purposes
   leds[BOAT_STRIP_BEGIN_POS] = CRGB::Green;
   leds[BOAT_STRIP_END_POS] = CRGB::Red;
   leds[TORPEDO_STRIP_0_BEGIN_POS] = CRGB::Green;
@@ -706,10 +685,6 @@ void setup() {
   leds[TORPEDO_STRIP_4_END_POS] = CRGB::Red;
   leds[TORPEDO_STRIP_5_BEGIN_POS] = CRGB::Green;
   leds[TORPEDO_STRIP_5_END_POS] = CRGB::Red;
-
-//#define TORPEDO_STRIP_0_INTERSECT_POS 78
-//#define BOAT_STRIP_0_INTERSECT_POS 20
-
   leds[TORPEDO_STRIP_0_INTERSECT_POS] = CRGB::Yellow;
   leds[BOAT_STRIP_0_INTERSECT_POS] = CRGB::Blue;
   leds[TORPEDO_STRIP_1_INTERSECT_POS] = CRGB::Yellow;
@@ -728,16 +703,13 @@ void setup() {
   FastLED.show(); 
   delay(2500);
 
-  //TODO Clear all, not just section
-  clearLEDSection(TORPEDO_STRIP_2_BEGIN_POS, TORPEDO_STRIP_2_END_POS);
+  clearAllTorpedoStrips();
+  clearBoatStrip();
 
 
-  boat_select_state = boat_select_states::no_boat_selected;
+  currentBoatSelectState = BOAT_SELECT_STATES::no_boat_selected;
 
-//  boat_select_state = warship_selected; // TODO delete, this is only for test 
-//  torpedo_select_state = fast_selected; // TODO delete, this is only for test 
-//  selectTrack(5);// TODO delete, this is only for test 
-
+  //set up inputs and outputs
   pinMode(TORPEDO_0_SELECT, INPUT_PULLUP);
   pinMode(TORPEDO_1_SELECT, INPUT_PULLUP);
   pinMode(TORPEDO_2_SELECT, INPUT_PULLUP);
@@ -750,7 +722,6 @@ void setup() {
   pinMode(TORPEDO_SLOW_BUTTON, INPUT_PULLUP);
   pinMode(START_BUTTON, INPUT_PULLUP);
   pinMode(FIRE_BUTTON, INPUT_PULLUP);
-
 
   pinMode(MERCHANT_VESSEL_BUTTON_LED, OUTPUT);
   pinMode(WARSHIP_BUTTON_LED, OUTPUT);
@@ -765,57 +736,53 @@ void setup() {
   pinMode(STRIP_3_HIT_LED, OUTPUT);
   pinMode(STRIP_4_HIT_LED, OUTPUT);
   pinMode(STRIP_5_HIT_LED, OUTPUT);
-
-
-
   
-//  currentGameState = DEMO_TEST;
 }
 
 //test
-int torpedo_tail_current_pos0 = -1;
-int torpedo_tail_current_pos1 = -1;
-int torpedo_tail_current_pos2 = -1;
-int torpedo_tail_current_pos3 = -1;
-int torpedo_tail_current_pos4 = -1;
-int torpedo_tail_current_pos5 = -1;
+int torpedoTailCurrentPos0 = -1;
+int torpedoTailCurrentPos1 = -1;
+int torpedoTailCurrentPos2 = -1;
+int torpedoTailCurrentPos3 = -1;
+int torpedoTailCurrentPos4 = -1;
+int torpedoTailCurrentPos5 = -1;
 
 void demoTestAdvance() {
   //  advanceShip();
-  advanceSprite(boat_tail_current_pos, getBoatLen(), BOAT_CRGB, getBoatStripBegin(), getBoatStripEnd());
-  advanceSprite(torpedo_tail_current_pos0, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(0), getTorpedoStripEnd(0));
-  advanceSprite(torpedo_tail_current_pos1, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(1), getTorpedoStripEnd(1));
-  advanceSprite(torpedo_tail_current_pos2, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(2), getTorpedoStripEnd(2));
-  advanceSprite(torpedo_tail_current_pos3, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(3), getTorpedoStripEnd(3));
-  advanceSprite(torpedo_tail_current_pos4, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(4), getTorpedoStripEnd(4));
-  advanceSprite(torpedo_tail_current_pos5, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(5), getTorpedoStripEnd(5));
+  advanceSprite(boatTailCurrentPos, getBoatLen(), BOAT_CRGB, getBoatStripBegin(), getBoatStripEnd());
+  advanceSprite(torpedoTailCurrentPos0, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(0), getTorpedoStripEnd(0));
+  advanceSprite(torpedoTailCurrentPos1, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(1), getTorpedoStripEnd(1));
+  advanceSprite(torpedoTailCurrentPos2, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(2), getTorpedoStripEnd(2));
+  advanceSprite(torpedoTailCurrentPos3, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(3), getTorpedoStripEnd(3));
+  advanceSprite(torpedoTailCurrentPos4, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(4), getTorpedoStripEnd(4));
+  advanceSprite(torpedoTailCurrentPos5, getTorpedoLen(), TORPEDO_CRGB, getTorpedoStripBegin(5), getTorpedoStripEnd(5));
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos0, getTorpedoLen(), getTorpedoStripIntersect(0))
+  if (torpedoAtIntersection(torpedoTailCurrentPos0, getTorpedoLen(), getTorpedoStripIntersect(0))
       && boatAtIntersection(getBoatStripIntersect(0))) {
     Serial.println("0 HIT");  
   }
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos1, getTorpedoLen(), getTorpedoStripIntersect(1))
+  if (torpedoAtIntersection(torpedoTailCurrentPos1, getTorpedoLen(), getTorpedoStripIntersect(1))
       && boatAtIntersection(getBoatStripIntersect(1))) {
     Serial.println("1 HIT");
   }
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos2, getTorpedoLen(), getTorpedoStripIntersect(2))
+  if (torpedoAtIntersection(torpedoTailCurrentPos2, getTorpedoLen(), getTorpedoStripIntersect(2))
       && boatAtIntersection(getBoatStripIntersect(2))) {
     Serial.println("2 HIT");
   }
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos3, getTorpedoLen(), getTorpedoStripIntersect(3))
+  if (torpedoAtIntersection(torpedoTailCurrentPos3, getTorpedoLen(), getTorpedoStripIntersect(3))
       && boatAtIntersection(getBoatStripIntersect(3))) {
     Serial.println("3 HIT");
   }
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos4, getTorpedoLen(), getTorpedoStripIntersect(4))
+  if (torpedoAtIntersection(torpedoTailCurrentPos4, getTorpedoLen(), getTorpedoStripIntersect(4))
       && boatAtIntersection(getBoatStripIntersect(4))) {
     Serial.println("4 HIT");
   }
 
-  if (torpedoAtIntersection(torpedo_tail_current_pos5, getTorpedoLen(), getTorpedoStripIntersect(5))
+  if (torpedoAtIntersection(torpedoTailCurrentPos5, getTorpedoLen(), getTorpedoStripIntersect(5))
       && boatAtIntersection(getBoatStripIntersect(5))) {
     Serial.println("5 HIT");
   }
@@ -825,35 +792,17 @@ void demoTestAdvance() {
 
 void loop() {
 
-//  advanceShip();
-
 switch(currentGameState) {
     case DEMO_TEST : 
-
-      Serial.println("Demo test");
+//      Serial.println("Demo test");
       for (int i = 0; i < 6 ; i++) {
         selectTrack(i);
-                              displayImpactSequence();
-
+        displayImpactSequence();
       }
-
-
-           // demoTestAdvance();
-//            flashFireLED();         
-//                        flashStartLED();              
-//     
-//               flashBoatButtons();
-//              flashTorpedoButtons();
-
-             break;       // and exits the switch
+      // demoTestAdvance();
+      break;       // and exits the switch
     case WAITING_FOR_BOAT_AND_TORPEDO_SELECTION :  ;
-          // CLEAR LEDs
-          // TODO 
-          
-          // Set Boat to beginning
-          // TODO 
-          
-          Serial.println("WAITING_FOR_BOAT_AND_TORPEDO_SELECTION");
+//          Serial.println("WAITING_FOR_BOAT_AND_TORPEDO_SELECTION");
            // poll boat select
            if (!selectBoat()) {
               // flash boat select
@@ -880,10 +829,7 @@ switch(currentGameState) {
              
              break;
     case WAITING_FOR_BOAT_SELECTION_ONLY :  ;
-           Serial.println("WAITING_FOR_BOAT_SELECTION_ONLY");
-            
-            
-            
+//           Serial.println("WAITING_FOR_BOAT_SELECTION_ONLY");            
             // poll torpedo select
             selectTorpedo();
             
@@ -898,11 +844,10 @@ switch(currentGameState) {
             //check for torpedo track changes
             selectTrack();
 
-            // check for timeout
-            
+            // TODO check for timeout?            
              break;
     case WAITING_FOR_TORPEDO_SELECTION_ONLY :  ;
-               Serial.println("WAITING_FOR_TORPEDO_SELECTION_ONLY");
+//               Serial.println("WAITING_FOR_TORPEDO_SELECTION_ONLY");
             // check for boat changes
             selectBoat();
             
@@ -914,18 +859,15 @@ switch(currentGameState) {
               currentGameState = WAITING_FOR_START;
               break;
            }
-
-
+           
             //check for torpedo track changes
             selectTrack();
             
-            //check for timeout
+            //TODO check for timeout?
              break;
     case WAITING_FOR_START :  ;
-                   Serial.println("WAITING_FOR_START");
-
-
-            
+//                   Serial.println("WAITING_FOR_START");
+          
             //check start button
             if (digitalRead(START_BUTTON) == LOW) {
               currentGameState = WAITING_FOR_TORPEDO_FIRE;
@@ -944,10 +886,10 @@ switch(currentGameState) {
             //check for torpedo track changes
             selectTrack();
 
-            // check for timeout
+            //TODO check for timeout?
              break;
     case WAITING_FOR_TORPEDO_FIRE :  
-            Serial.println("WAITING_FOR_TORPEDO_FIRE");
+//            Serial.println("WAITING_FOR_TORPEDO_FIRE");
             // poll fire button
             if (digitalRead(FIRE_BUTTON) == LOW) {
               currentGameState = WAITING_FOR_TORPEDO_END;
@@ -959,8 +901,7 @@ switch(currentGameState) {
             //check for torpedo track changes
             selectTrack();
 
-            // check timeout
-            // TODO
+            // TODO check timeout?
             
             // advance boat
             if (!advanceShip()) {
@@ -969,7 +910,7 @@ switch(currentGameState) {
             }
              break;
     case WAITING_FOR_TORPEDO_END :  ;
-              Serial.println("WAITING_FOR_TORPEDO_END");
+//              Serial.println("WAITING_FOR_TORPEDO_END");
 
             // advance boat 
             if (!advanceShip()) {
@@ -1014,25 +955,14 @@ switch(currentGameState) {
 
              break;
     case RESET_GAME :  ;
-        boat_select_state = no_boat_selected;
-        torpedo_select_state = no_torpedo_selected;
+        currentBoatSelectState = no_boat_selected;
+        currentTorpedoSelectState = no_torpedo_selected;
         clearAllTorpedoStrips();
         clearBoatStrip();
         resetButtonLEDs();
         currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
         break;
-
-}
-
-
-  
-
+        }
+        
     FastLED.show(); 
-//TODO kill (for testing)
- // delay(200);
-
-  static uint8_t hue = 0;
-
-
-
 }
