@@ -1,24 +1,10 @@
 #include <FastLED.h>
 
-// TODO move all fire test code to 'example display mode" func 30m
-// TODO add torpedo track select switch
-// TODO add lights and flash sequence for collisions 1 h 
-// TODO add boat start button  
-// TODO add boat type select switch
-// TODO add torpedo type select switch
-// TODO fix red/green FastLED callibration
-// TODO connect to actual selectors and buttons and lights
+
 // TODO make fritzing diagram 
-// TODO review narrative and implement gaps
-// TODO implement game wait personality sequence
 // TODO fix underscore variables to camel case
 
 #define PIXEL_COUNT 200
-
-// For led chips like Neopixels, which have a data line, ground, and power, you just
-// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
-// ground, and power), like the LPD8806, define both DATA_PIN and CLOCK_PIN
-//#define DATA_PIN 7
 #define DATA_PIN 53
 #define CLOCK_PIN 13
 
@@ -37,13 +23,20 @@
 #define START_BUTTON_LED             26
 #define FIRE_BUTTON_LED              27
 
+#define STRIP_0_HIT_LED              A8
+#define STRIP_1_HIT_LED              A9
+#define STRIP_2_HIT_LED              A10
+#define STRIP_3_HIT_LED              A11
+#define STRIP_4_HIT_LED              A12
+#define STRIP_5_HIT_LED              A13
 
-#define TORPEDO_0_SELECT             30
-#define TORPEDO_1_SELECT             31
-#define TORPEDO_2_SELECT             32
-#define TORPEDO_3_SELECT             33
-#define TORPEDO_4_SELECT             34
-#define TORPEDO_5_SELECT             35
+
+#define TORPEDO_0_SELECT             A0
+#define TORPEDO_1_SELECT             A1
+#define TORPEDO_2_SELECT             A2
+#define TORPEDO_3_SELECT             A3
+#define TORPEDO_4_SELECT             A4
+#define TORPEDO_5_SELECT             A5
 
 
 #define WARSHIP_LEN                  5
@@ -56,10 +49,12 @@
 #define FAST_TORPEDO_SPEED_MS_INTER  50
 #define SLOW_TORPEDO_SPEED_MS_INTER  100
 
-#define BOAT_LED_FLASH_MS_INTERVAL          750
-#define TORPEDO_LED_FLASH_MS_INTERVAL       600
-#define START_LED_FLASH_MS_INTERVAL          250
-#define FIRE_LED_FLASH_MS_INTERVAL          250
+#define BOAT_LED_FLASH_MS_INTERVAL   750
+#define TORPEDO_LED_FLASH_MS_INTERVAL 600
+#define START_LED_FLASH_MS_INTERVAL  250
+#define FIRE_LED_FLASH_MS_INTERVAL   250
+#define HIT_FLASH_MS_INTERVAL        250
+#define HIT_FLASH_COUNT              4
 
 
 #define TORPEDO_CRGB CRGB::White
@@ -128,6 +123,9 @@ GAME_STATE currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
 // Define the array of leds
 CRGB leds[PIXEL_COUNT];
 
+//HIT leds for each strip
+int stripHitLEDs[6] = {STRIP_0_HIT_LED, STRIP_1_HIT_LED, STRIP_2_HIT_LED, 
+                       STRIP_3_HIT_LED, STRIP_4_HIT_LED, STRIP_5_HIT_LED};
 
 // multidimensional array holds all the torpedo and boat strip intersection data
 int strip_locations[6][4] = {
@@ -643,12 +641,19 @@ boolean isCollision() {
 
 
 void displayImpactSequence(int track) {
+  Serial.println("HIT!");
+  
+  for (int i = 0; i < HIT_FLASH_COUNT; i++) {
+    digitalWrite(stripHitLEDs[track], HIGH);
+    delay(HIT_FLASH_MS_INTERVAL);
+    digitalWrite(stripHitLEDs[track], LOW);
+    delay(HIT_FLASH_MS_INTERVAL);    
+  }
   //TODO flash LED button
   // animate star
 
-  Serial.println("HIT!");
   //TODO Remove:
-  delay(1000);
+  
 }
 
 void displayImpactSequence() {
@@ -685,8 +690,8 @@ void setup() {
     Serial.begin(115200);
   Serial.println("resetting");
   LEDS.addLeds<WS2812,DATA_PIN,RGB>(leds,PIXEL_COUNT);
-//  LEDS.setBrightness(84);
-  LEDS.setBrightness(1);
+//  LEDS.setupdateBoatButtonLEDsness(84);
+  LEDS.setupdateBoatButtonLEDsness(1);
   leds[BOAT_STRIP_BEGIN_POS] = CRGB::Green;
   leds[BOAT_STRIP_END_POS] = CRGB::Red;
   leds[TORPEDO_STRIP_0_BEGIN_POS] = CRGB::Green;
@@ -754,6 +759,15 @@ void setup() {
   pinMode(START_BUTTON_LED, OUTPUT);
   pinMode(FIRE_BUTTON_LED, OUTPUT);
 
+  pinMode(STRIP_0_HIT_LED, OUTPUT);
+  pinMode(STRIP_1_HIT_LED, OUTPUT);
+  pinMode(STRIP_2_HIT_LED, OUTPUT);
+  pinMode(STRIP_3_HIT_LED, OUTPUT);
+  pinMode(STRIP_4_HIT_LED, OUTPUT);
+  pinMode(STRIP_5_HIT_LED, OUTPUT);
+
+
+
   
 //  currentGameState = DEMO_TEST;
 }
@@ -815,34 +829,14 @@ void loop() {
 
 switch(currentGameState) {
     case DEMO_TEST : 
+
       Serial.println("Demo test");
-      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
-      delay(200);
-      digitalWrite(WARSHIP_BUTTON_LED, HIGH);
-      delay(200);
-      digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
-      delay(200);
-      digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);
-      delay(200);
-      digitalWrite(START_BUTTON_LED, HIGH);
-      delay(200);
-      digitalWrite(FIRE_BUTTON_LED, HIGH);
-      delay(200);
+      for (int i = 0; i < 6 ; i++) {
+        selectTrack(i);
+                              displayImpactSequence();
 
+      }
 
-
-      digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
-      delay(50);
-      digitalWrite(WARSHIP_BUTTON_LED, LOW);
-      delay(50);
-      digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
-      delay(50);
-      digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
-      delay(50);
-      digitalWrite(START_BUTTON_LED, LOW);
-      delay(50);
-      digitalWrite(FIRE_BUTTON_LED, LOW);
-      delay(50);
 
            // demoTestAdvance();
 //            flashFireLED();         
