@@ -667,7 +667,7 @@ void resetBoat() {
 void setup() {
   Serial.begin(115200);
   Serial.println("resetting");
-  LEDS.addLeds<WS2812,LED_DATA_PIN,RGB>(leds,PIXEL_COUNT);
+  LEDS.addLeds<WS2812,LED_DATA_PIN,GRB>(leds,PIXEL_COUNT);
   LEDS.setBrightness(LED_BRIGHTNESS);
 
   // Show start stops and intersections for debug purposes
