@@ -26,6 +26,11 @@
 #define MISS_FLASH_COUNT 4
 #define MISS_FLASH_INTERVAL 250
 
+// Timeout for input select and attact mode
+#define INPUT_TIMEOUT_INTERVAL 15000
+// 15 minutes in millis
+#define INPUT_ATTRACT_TIMEOUT_INTERVAL 900000
+
 
 // INPUT PINS for buttons and torpedo selectors
 #define FIRE_BUTTON              0
@@ -121,7 +126,10 @@ enum GAME_STATE {
   TORPEDO_MISS_WAITING_FOR_BOAT,
   BOAT_COMPLETE_WAITING_FOR_TORPEDO,
   BOAT_COMPLETE,
-  RESET_GAME
+  RESET_GAME,
+  ATTRACT_INITIATE,
+  ATTRACT_WAITNG_FOR_FIRE,
+  ATTRACT_WAITING_FOR_TORPEDO_END
 };
 
 // Inital game state is waiting or boat
@@ -129,6 +137,11 @@ GAME_STATE currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
 
 // Define the array of leds
 CRGB leds[PIXEL_COUNT];
+
+// timers for select timeout and attact mode
+long startedSelectionTimeOutTimer = millis();
+long startedAttractTimeOutTimer = millis();
+long fireTorpedoTime = millis();
 
 //HIT leds for each strip
 int stripHitLEDs[6] = {STRIP_0_HIT_LED, STRIP_1_HIT_LED, STRIP_2_HIT_LED, 
@@ -549,6 +562,30 @@ boolean selectTorpedo() {
   return true;
 }
 
+void selectRandomBoat() {
+  if (random(2)) {
+    currentBoatSelectState = merchant_selected;
+  } else {
+    currentBoatSelectState = warship_selected;
+  }
+   
+  //update selection buttons
+  updateBoatButtonLEDs();
+  //display boat
+  lightBoatInitialPosition();
+}
+
+void selectRandomTorpedo() {
+  if (random(2)) {
+    currentTorpedoSelectState = fast_selected;   
+  } else {
+    currentTorpedoSelectState = slow_selected;
+  }
+
+  //update selection buttons
+  lightTorpedoInitialPosition();
+  updateTorpedButtonLEDs();
+}
 
 
 //note this has side effect of updating spritePos ... should return spritePos instead?
@@ -826,26 +863,40 @@ void demoTestAdvance() {
   }
 
 }
-long startedTimeOutTimer = millis();
-#define INPUT_TIMEOUT_INTERVAL 5000;
-void resetTimeOutTime() {
-  startedTimeOutTimer = millis();
+
+void resetSelectTimeOutTime() {
+  startedSelectionTimeOutTimer = millis();
 }
-boolean isTimedOut() {
-  return (millis() - startedTimeOutTimer) > INPUT_TIMEOUT_INTERVAL;
+
+boolean isSelectionTimedOut() {
+  return (millis() - startedSelectionTimeOutTimer) > INPUT_TIMEOUT_INTERVAL;
 }
+
+
+void resetAttractTimeOutTime() {
+  startedAttractTimeOutTimer = millis();
+}
+
+boolean isAttractTimedOut() {
+  return (millis() - startedAttractTimeOutTimer) > INPUT_ATTRACT_TIMEOUT_INTERVAL;
+}
+
+boolean isAnyButtonPressed() {
+  return digitalRead(MERCHANT_VESSEL_BUTTON) == LOW ||
+         digitalRead(WARSHIP_BUTTON) == LOW || 
+         digitalRead(TORPEDO_FAST_BUTTON) == LOW || 
+         digitalRead(TORPEDO_SLOW_BUTTON) == LOW || 
+         digitalRead(FIRE_BUTTON) == LOW || 
+         digitalRead(START_BUTTON) == LOW; 
+}
+
 
 void loop() {
 
 switch(currentGameState) {
     case DEMO_TEST : 
-//      Serial.println("Demo test");
-      for (int i = 0; i < 6 ; i++) {
-        selectTrack(i);
-        displayImpactSequence();
-      }
-      // demoTestAdvance();
-      break;       // and exits the switch
+          //TEST CODE HERE
+           break;
     case WAITING_FOR_BOAT_AND_TORPEDO_SELECTION :  ;
 //          Serial.println("WAITING_FOR_BOAT_AND_TORPEDO_SELECTION");
            // poll boat select
@@ -853,7 +904,7 @@ switch(currentGameState) {
               // flash boat select
               flashBoatButtons();
            } else {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_TORPEDO_SELECTION_ONLY;
               break;
            }
@@ -863,32 +914,40 @@ switch(currentGameState) {
               // flash torpedo select
               flashTorpedoButtons();
            } else {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
               break;
            }
 
             //check for torpedo track changes
-            selectTrack();
+            if (selectTrack()) {
+               resetSelectTimeOutTime(); 
+            }
+
+            // Go into Attract Mode after delay
+            if (isAttractTimedOut()) {
+              currentGameState = ATTRACT_INITIATE;
+            }
+         
              
-             break;
+            break;
     case WAITING_FOR_BOAT_SELECTION_ONLY :  ;
 //           Serial.println("WAITING_FOR_BOAT_SELECTION_ONLY");   
             // bail after input time
-            if (isTimedOut()) {
+            if (isSelectionTimedOut()) {
               currentGameState = RESET_GAME;
             }
          
             // poll torpedo select
             if (selectTorpedo()) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
             }
             
            if (!selectBoat()) {
               // flash boat select
               flashBoatButtons();
            } else {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_START;
               break;
            }
@@ -901,13 +960,13 @@ switch(currentGameState) {
     case WAITING_FOR_TORPEDO_SELECTION_ONLY :  ;
 //               Serial.println("WAITING_FOR_TORPEDO_SELECTION_ONLY");
             // bail after input time
-            if (isTimedOut()) {
+            if (isSelectionTimedOut()) {
               currentGameState = RESET_GAME;
             }
 
             // check for boat changes
             if (selectBoat()) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
             }
             
            // poll torpedo select
@@ -915,7 +974,7 @@ switch(currentGameState) {
               // flash torpedo select
               flashTorpedoButtons();
            } else {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_START;
               break;
            }
@@ -928,13 +987,13 @@ switch(currentGameState) {
     case WAITING_FOR_START :  ;
 //                   Serial.println("WAITING_FOR_START");
             // bail after input time
-            if (isTimedOut()) {
+            if (isSelectionTimedOut()) {
               currentGameState = RESET_GAME;
             }
 
             //check start button
             if (digitalRead(START_BUTTON) == LOW) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_TORPEDO_FIRE;
               digitalWrite(START_BUTTON_LED, LOW);
               break;
@@ -944,17 +1003,17 @@ switch(currentGameState) {
             }
             // check for boat changes
             if (selectBoat()) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
             }
             
             //change torpedo
             if (selectTorpedo()) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
             }
             
             //check for torpedo track changes
             if (selectTrack()) {
-              resetTimeOutTime(); 
+              resetSelectTimeOutTime(); 
             }
 
             //TODO check for timeout?
@@ -1014,29 +1073,76 @@ switch(currentGameState) {
 //            currentGameState = TORPEDO_MISS_WAITING_FOR_BOAT; 
             currentGameState = RESET_GAME; 
             
-             break;
+            break;
     case TORPEDO_MISS_WAITING_FOR_BOAT :  ;
             if (!advanceShip()) {
               currentGameState = RESET_GAME; 
             }
-             break;
+            break;
     case BOAT_COMPLETE_WAITING_FOR_TORPEDO :  ;
             // advance torpedo 
             if (!advanceTorpedo()) {
               currentGameState = TORPEDO_MISS;
             }
 
-             break;
+            break;
     case RESET_GAME :  ;
         currentBoatSelectState = no_boat_selected;
         currentTorpedoSelectState = no_torpedo_selected;
         clearAllTorpedoStrips();
         clearBoatStrip();
         resetButtonLEDs();
-        resetTimeOutTime(); 
+        resetSelectTimeOutTime(); 
+        resetAttractTimeOutTime();
         currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
         break;
-        }
+    case ATTRACT_INITIATE :
+      selectRandomBoat();
+      selectRandomTorpedo();
+      // set a random torpedo fire time within next few seconds
+      fireTorpedoTime = millis() + random(5000); 
+
+      currentGameState = ATTRACT_WAITNG_FOR_FIRE;
+      break;
+    case ATTRACT_WAITNG_FOR_FIRE :
+      // abort if anybutton is touched
+      if (isAnyButtonPressed() || selectTrack()) {
+        currentGameState = RESET_GAME;
+      }
+      
+      if (millis() > fireTorpedoTime) {
+        currentGameState = WAITING_FOR_TORPEDO_END; //TODO MAKE NEW DEMO WAITING FOR TORPEDO
+      } else {
+        //flash Fire button
+        flashFireLED();              
+      }
+      
+      if (!advanceShip()) {
+        // todo what to do if boat completes w/o fire? Reset or scroll boat again?
+        currentGameState = RESET_GAME; 
+      }
+      
+      break;
+    case ATTRACT_WAITING_FOR_TORPEDO_END :
+      // abort if anybutton is touched
+      if (isAnyButtonPressed()) {
+        currentGameState = RESET_GAME;
+      }
+
+      // advance boat 
+      if (!advanceShip()) {
+        currentGameState = RESET_GAME; // TODO let Torpedo travel state?
+      }
+      // advance torpedo 
+      if (!advanceTorpedo()) {
+        currentGameState = TORPEDO_MISS;
+      }
+      // check for hit
+      if (isCollision()) {
+        currentGameState = TORPEDO_HIT;
+      }
+      break;
+     }
         
     FastLED.show(); 
 }
