@@ -1032,7 +1032,7 @@ switch(currentGameState) {
 
             // advance boat 
             if (!advanceShip()) {
-              currentGameState = BOAT_COMPLETE_WAITING_FOR_TORPEDO; /
+              currentGameState = BOAT_COMPLETE_WAITING_FOR_TORPEDO;
             }
             // advance torpedo 
             if (!advanceTorpedo()) {
