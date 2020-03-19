@@ -1,8 +1,10 @@
+/**
+ * Submarine Torpedo Game
+ * 
+ * copyright Jeremy Franklin-Ross, Pacific Studios 2020
+ */
 #include <FastLED.h>
 
-// TODO FASTLED RGB TUNING
-// TODO make fritzing diagram 
-// TODO fix underscore variables to camel case
 
 // BOAT LENGTHS & SPEEDS
 #define WARSHIP_LENGTH                  5
@@ -30,7 +32,6 @@
 #define INPUT_TIMEOUT_INTERVAL 15000
 // 15 minutes in millis
 #define INPUT_ATTRACT_TIMEOUT_INTERVAL 900000
-
 
 // INPUT PINS for buttons and torpedo selectors
 #define FIRE_BUTTON              0
@@ -266,14 +267,6 @@ int getTorpedoSpeed() {
 
 
 
-//TODO Move or remove timeout
-#define DEFAULT_SELECTION_TIMEOUT 2000
-#define DEFAULT_LIGHT_ALTERNATION_RATE 1000
-
-//TODO complete or delete timout
-long last_selection_time = -1;
-long selection_timeout = DEFAULT_SELECTION_TIMEOUT;
-long standby_light_alternation_rate = DEFAULT_LIGHT_ALTERNATION_RATE;
 
 
 // Tracking position of torpedo
@@ -342,7 +335,6 @@ void selectTrack(int track) {
 // select track and updates display
 // return true means track selection changed
 boolean selectTrack() {
-  //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
   int lastSelectedTrack = currentSelectedTrack;
   if (digitalRead(TORPEDO_0_SELECT) == LOW) {
@@ -499,7 +491,6 @@ void updateTorpedButtonLEDs() {
 
 
 boolean selectBoat() {
-  //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
   BOAT_SELECT_STATES lastSelected = currentBoatSelectState;
 
@@ -532,7 +523,6 @@ boolean selectBoat() {
 
 
 boolean selectTorpedo() {
-  //TODO detect selector switch states then call selectTrack(int track)
   int selectCount = 0;
   TORPEDO_SELECT_STATES lastSelected = currentTorpedoSelectState;
 
@@ -590,7 +580,6 @@ void selectRandomTorpedo() {
 
 //note this has side effect of updating spritePos ... should return spritePos instead?
 boolean advanceSprite(int &spritePos, int spriteLen, CRGB spriteColor, int stripBegin, int stripEnd) {
-   // check time TODO
   // increment position
   if (spritePos == -1) {
     spritePos = stripBegin;
@@ -603,10 +592,8 @@ boolean advanceSprite(int &spritePos, int spriteLen, CRGB spriteColor, int strip
   }
   
   if (spritePos > stripEnd) {
-    //RESET game state TODO
      leds[stripEnd] = CRGB::Black; 
     spritePos = -1; 
-    //TODO play miss sequence
     return false;
   }
 
@@ -692,8 +679,7 @@ void displayImpactSequence(int track) {
     digitalWrite(stripHitLEDs[track], LOW);
     delay(HIT_FLASH_MS_INTERVAL);    
   }
-  //TODO flash LED button
-  // animate star  
+
 }
 
 void displayImpactSequence() {
@@ -955,7 +941,6 @@ switch(currentGameState) {
             //check for torpedo track changes
             selectTrack();
 
-            // TODO check for timeout?            
              break;
     case WAITING_FOR_TORPEDO_SELECTION_ONLY :  ;
 //               Serial.println("WAITING_FOR_TORPEDO_SELECTION_ONLY");
@@ -982,7 +967,6 @@ switch(currentGameState) {
             //check for torpedo track changes
             selectTrack();
             
-            //TODO check for timeout?
              break;
     case WAITING_FOR_START :  ;
 //                   Serial.println("WAITING_FOR_START");
@@ -1016,12 +1000,17 @@ switch(currentGameState) {
               resetSelectTimeOutTime(); 
             }
 
-            //TODO check for timeout?
              break;
     case WAITING_FOR_TORPEDO_FIRE :  
 //            Serial.println("WAITING_FOR_TORPEDO_FIRE");
+           // bail after input time
+            if (isSelectionTimedOut()) {
+              currentGameState = RESET_GAME;
+            }
+
             // poll fire button
             if (digitalRead(FIRE_BUTTON) == LOW) {
+	          resetSelectTimeOutTime(); 
               currentGameState = WAITING_FOR_TORPEDO_END;
             } else {
               //flash Fire button
@@ -1035,7 +1024,6 @@ switch(currentGameState) {
             
             // advance boat
             if (!advanceShip()) {
-              // todo what to do if boat completes w/o fire? Reset or scroll boat again?
               currentGameState = RESET_GAME; 
             }
              break;
@@ -1044,7 +1032,7 @@ switch(currentGameState) {
 
             // advance boat 
             if (!advanceShip()) {
-              currentGameState = BOAT_COMPLETE_WAITING_FOR_TORPEDO; // TODO let Torpedo travel state?
+              currentGameState = BOAT_COMPLETE_WAITING_FOR_TORPEDO; /
             }
             // advance torpedo 
             if (!advanceTorpedo()) {
@@ -1063,7 +1051,7 @@ switch(currentGameState) {
             resetBoat();
                         
             // reset to 
-             currentGameState = RESET_GAME; //todo any clean up state needed?
+             currentGameState = RESET_GAME; 
 
              break;
     case TORPEDO_MISS :  ;
@@ -1111,14 +1099,13 @@ switch(currentGameState) {
       }
       
       if (millis() > fireTorpedoTime) {
-        currentGameState = WAITING_FOR_TORPEDO_END; //TODO MAKE NEW DEMO WAITING FOR TORPEDO
+        currentGameState = WAITING_FOR_TORPEDO_END; 
       } else {
         //flash Fire button
         flashFireLED();              
       }
       
       if (!advanceShip()) {
-        // todo what to do if boat completes w/o fire? Reset or scroll boat again?
         currentGameState = RESET_GAME; 
       }
       
@@ -1131,7 +1118,7 @@ switch(currentGameState) {
 
       // advance boat 
       if (!advanceShip()) {
-        currentGameState = RESET_GAME; // TODO let Torpedo travel state?
+        currentGameState = RESET_GAME; 
       }
       // advance torpedo 
       if (!advanceTorpedo()) {
