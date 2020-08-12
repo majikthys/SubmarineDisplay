@@ -116,7 +116,6 @@
 // Game states, for a low key state machine
 enum GAME_STATE {
   DEMO_TEST,
-  WAITING_FOR_BOAT_AND_TORPEDO_SELECTION,
   WAITING_FOR_BOAT_SELECTION_ONLY,
   WAITING_FOR_TORPEDO_SELECTION_ONLY,
   WAITING_FOR_START,
@@ -134,7 +133,7 @@ enum GAME_STATE {
 };
 
 // Inital game state is waiting or boat
-GAME_STATE currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
+GAME_STATE currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
 
 // Define the array of leds
 CRGB leds[PIXEL_COUNT];
@@ -883,40 +882,7 @@ switch(currentGameState) {
     case DEMO_TEST : 
           //TEST CODE HERE
            break;
-    case WAITING_FOR_BOAT_AND_TORPEDO_SELECTION :  ;
-//          Serial.println("WAITING_FOR_BOAT_AND_TORPEDO_SELECTION");
-           // poll boat select
-           if (!selectBoat()) {
-              // flash boat select
-              flashBoatButtons();
-           } else {
-              resetSelectTimeOutTime(); 
-              currentGameState = WAITING_FOR_TORPEDO_SELECTION_ONLY;
-              break;
-           }
 
-           // poll torpedo select
-           if (!selectTorpedo()) {
-              // flash torpedo select
-              flashTorpedoButtons();
-           } else {
-              resetSelectTimeOutTime(); 
-              currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
-              break;
-           }
-
-            //check for torpedo track changes
-            if (selectTrack()) {
-               resetSelectTimeOutTime(); 
-            }
-
-            // Go into Attract Mode after delay
-            if (isAttractTimedOut()) {
-              currentGameState = ATTRACT_INITIATE;
-            }
-         
-             
-            break;
     case WAITING_FOR_BOAT_SELECTION_ONLY :  ;
 //           Serial.println("WAITING_FOR_BOAT_SELECTION_ONLY");   
             // bail after input time
@@ -938,8 +904,15 @@ switch(currentGameState) {
               break;
            }
 
-            //check for torpedo track changes
-            selectTrack();
+           //check for torpedo track changes
+            if (selectTrack()) {
+               resetSelectTimeOutTime(); 
+            }
+
+            // Go into Attract Mode after delay
+            if (isAttractTimedOut()) {
+              currentGameState = ATTRACT_INITIATE;
+            }
 
              break;
     case WAITING_FOR_TORPEDO_SELECTION_ONLY :  ;
@@ -1082,7 +1055,7 @@ switch(currentGameState) {
         resetButtonLEDs();
         resetSelectTimeOutTime(); 
         resetAttractTimeOutTime();
-        currentGameState = WAITING_FOR_BOAT_AND_TORPEDO_SELECTION;
+        currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
         break;
     case ATTRACT_INITIATE :
       selectRandomBoat();
