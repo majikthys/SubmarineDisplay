@@ -633,16 +633,24 @@ boolean advanceTorpedo() {
 }
 
 
-// Determine if any torpedo pixel intersection of the given torpedo track
+// ORIGINAL
+//// Determine if any torpedo pixel intersection of the given torpedo track
+//boolean torpedoAtIntersection(int torpedoTailPos, int torpedoLen, int torpedoStripIntersect) {
+//  for (int torpedoPixel = torpedoTailPos; torpedoPixel < torpedoTailPos + torpedoLen; torpedoPixel++) {
+//    if (torpedoPixel == torpedoStripIntersect) {
+//        return true;
+//    }
+//  }
+//  return false;
+//}
+
+// Determine if ONLY HEAD torpedo pixel intersection of the given torpedo track
 boolean torpedoAtIntersection(int torpedoTailPos, int torpedoLen, int torpedoStripIntersect) {
-  for (int torpedoPixel = torpedoTailPos; torpedoPixel < torpedoTailPos + torpedoLen; torpedoPixel++) {
-    if (torpedoPixel == torpedoStripIntersect) {
+  if ((torpedoTailPos + torpedoLen) == torpedoStripIntersect) {
         return true;
-    }
   }
   return false;
 }
-
 
 // Determine if any torpedo pixel intersection of the current torpedo strip
 boolean torpedoAtIntersection() {
