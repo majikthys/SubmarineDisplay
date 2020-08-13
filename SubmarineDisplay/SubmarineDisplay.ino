@@ -75,7 +75,7 @@
 
     
 // Strip brightnetss 1 to 255
-#define LED_BRIGHTNESS           1
+#define LED_BRIGHTNESS           255
 
 // Boat strip begin and end positions
 #define BOAT_STRIP_BEGIN_POS     0
@@ -889,18 +889,13 @@ switch(currentGameState) {
             if (isSelectionTimedOut()) {
               currentGameState = RESET_GAME;
             }
-         
-            // poll torpedo select
-            if (selectTorpedo()) {
-              resetSelectTimeOutTime(); 
-            }
             
            if (!selectBoat()) {
               // flash boat select
               flashBoatButtons();
            } else {
               resetSelectTimeOutTime(); 
-              currentGameState = WAITING_FOR_START;
+              currentGameState = WAITING_FOR_TORPEDO_SELECTION_ONLY;
               break;
            }
 
