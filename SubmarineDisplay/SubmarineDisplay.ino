@@ -884,7 +884,6 @@ void demoTestAdvance() {
   digitalWrite(STRIP_5_HIT_LED, HIGH);
   delay(buttonStepDelay);
   digitalWrite(STRIP_5_HIT_LED, LOW);
-  delay(buttonStepDelay);
   
   
   digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
