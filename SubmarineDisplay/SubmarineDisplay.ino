@@ -133,7 +133,7 @@ enum GAME_STATE {
 };
 
 // Inital game state is waiting or boat
-GAME_STATE currentGameState = WAITING_FOR_BOAT_SELECTION_ONLY;
+GAME_STATE currentGameState = DEMO_TEST;
 
 // Define the array of leds
 CRGB leds[PIXEL_COUNT];
@@ -815,45 +815,104 @@ int torpedoTailCurrentPos3 = -1;
 int torpedoTailCurrentPos4 = -1;
 int torpedoTailCurrentPos5 = -1;
 
+
+// TODO DRY up, lots of copypasta
 void demoTestAdvance() {
-  //  advanceShip();
-  advanceSprite(boatTailCurrentPos, getBoatLen(), getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
-  advanceSprite(torpedoTailCurrentPos0, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(0), getTorpedoStripEnd(0));
-  advanceSprite(torpedoTailCurrentPos1, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(1), getTorpedoStripEnd(1));
-  advanceSprite(torpedoTailCurrentPos2, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(2), getTorpedoStripEnd(2));
-  advanceSprite(torpedoTailCurrentPos3, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(3), getTorpedoStripEnd(3));
-  advanceSprite(torpedoTailCurrentPos4, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(4), getTorpedoStripEnd(4));
-  advanceSprite(torpedoTailCurrentPos5, getTorpedoLen(), getTorpedoColor(), getTorpedoStripBegin(5), getTorpedoStripEnd(5));
-
-  if (torpedoAtIntersection(torpedoTailCurrentPos0, getTorpedoLen(), getTorpedoStripIntersect(0))
-      && boatAtIntersection(getBoatStripIntersect(0))) {
-    Serial.println("0 HIT");  
+  long stepDelay = 150;
+  long buttonStepDelay = 1000;
+  
+  // Run the boat strip
+  advanceSprite(boatTailCurrentPos, 1, getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
+  while (boatTailCurrentPos > -1) {
+      FastLED.show(); 
+      delay(stepDelay);
+      advanceSprite(boatTailCurrentPos, 1, getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
   }
 
-  if (torpedoAtIntersection(torpedoTailCurrentPos1, getTorpedoLen(), getTorpedoStripIntersect(1))
-      && boatAtIntersection(getBoatStripIntersect(1))) {
-    Serial.println("1 HIT");
+  advanceSprite(torpedoTailCurrentPos0, 1, getTorpedoColor(), getTorpedoStripBegin(0), getTorpedoStripEnd(0));
+  while (torpedoTailCurrentPos0 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos0, 1, getTorpedoColor(), getTorpedoStripBegin(0), getTorpedoStripEnd(0));
+  }  
+  
+  advanceSprite(torpedoTailCurrentPos1, 1, getTorpedoColor(), getTorpedoStripBegin(1), getTorpedoStripEnd(1));
+  while (torpedoTailCurrentPos1 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos1, 1, getTorpedoColor(), getTorpedoStripBegin(1), getTorpedoStripEnd(1));
+  }
+  
+  advanceSprite(torpedoTailCurrentPos2, 1, getTorpedoColor(), getTorpedoStripBegin(2), getTorpedoStripEnd(2));
+  while (torpedoTailCurrentPos2 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos2, 1, getTorpedoColor(), getTorpedoStripBegin(2), getTorpedoStripEnd(2));
+  }
+  
+  advanceSprite(torpedoTailCurrentPos3, 1, getTorpedoColor(), getTorpedoStripBegin(3), getTorpedoStripEnd(3));
+  while (torpedoTailCurrentPos3 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos3, 1, getTorpedoColor(), getTorpedoStripBegin(3), getTorpedoStripEnd(3));
+  }
+  
+  advanceSprite(torpedoTailCurrentPos4, 1, getTorpedoColor(), getTorpedoStripBegin(4), getTorpedoStripEnd(4));
+  while (torpedoTailCurrentPos4 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos4, 1, getTorpedoColor(), getTorpedoStripBegin(4), getTorpedoStripEnd(4));
+  }
+  
+  advanceSprite(torpedoTailCurrentPos5, 1, getTorpedoColor(), getTorpedoStripBegin(5), getTorpedoStripEnd(5));
+  while (torpedoTailCurrentPos5 > -1) {
+    FastLED.show(); 
+    delay(stepDelay);
+    advanceSprite(torpedoTailCurrentPos5, 1, getTorpedoColor(), getTorpedoStripBegin(5), getTorpedoStripEnd(5));
   }
 
-  if (torpedoAtIntersection(torpedoTailCurrentPos2, getTorpedoLen(), getTorpedoStripIntersect(2))
-      && boatAtIntersection(getBoatStripIntersect(2))) {
-    Serial.println("2 HIT");
-  }
+  FastLED.show(); 
 
-  if (torpedoAtIntersection(torpedoTailCurrentPos3, getTorpedoLen(), getTorpedoStripIntersect(3))
-      && boatAtIntersection(getBoatStripIntersect(3))) {
-    Serial.println("3 HIT");
-  }
+  digitalWrite(STRIP_0_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_0_HIT_LED, LOW);
+  digitalWrite(STRIP_1_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_1_HIT_LED, LOW);
+  digitalWrite(STRIP_2_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_2_HIT_LED, LOW);
+  digitalWrite(STRIP_3_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_3_HIT_LED, LOW);
+  digitalWrite(STRIP_4_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_4_HIT_LED, LOW);
+  digitalWrite(STRIP_5_HIT_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(STRIP_5_HIT_LED, LOW);
+  
+  
+  digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
+  digitalWrite(WARSHIP_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(WARSHIP_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+  digitalWrite(START_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(START_BUTTON_LED, LOW);
+  digitalWrite(FIRE_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(FIRE_BUTTON_LED, LOW);
 
-  if (torpedoAtIntersection(torpedoTailCurrentPos4, getTorpedoLen(), getTorpedoStripIntersect(4))
-      && boatAtIntersection(getBoatStripIntersect(4))) {
-    Serial.println("4 HIT");
-  }
-
-  if (torpedoAtIntersection(torpedoTailCurrentPos5, getTorpedoLen(), getTorpedoStripIntersect(5))
-      && boatAtIntersection(getBoatStripIntersect(5))) {
-    Serial.println("5 HIT");
-  }
+  delay(1000);
 
 }
 
@@ -888,7 +947,8 @@ void loop() {
 
 switch(currentGameState) {
     case DEMO_TEST : 
-          //TEST CODE HERE
+          demoTestAdvance();
+          currentGameState = RESET_GAME;
            break;
 
     case WAITING_FOR_BOAT_SELECTION_ONLY :  ;
