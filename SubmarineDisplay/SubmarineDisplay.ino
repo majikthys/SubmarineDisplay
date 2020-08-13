@@ -25,8 +25,8 @@
 #define FIRE_LED_FLASH_MS_INTERVAL   250
 #define HIT_FLASH_MS_INTERVAL        250
 #define HIT_FLASH_COUNT              4
-#define MISS_FLASH_COUNT 4
-#define MISS_FLASH_INTERVAL 250
+#define MISS_FLASH_COUNT 1
+#define MISS_FLASH_INTERVAL 1000
 
 // Timeout for input select and attact mode
 #define INPUT_TIMEOUT_INTERVAL 15000
@@ -75,7 +75,7 @@
 
     
 // Strip brightnetss 1 to 255
-#define LED_BRIGHTNESS           1
+#define LED_BRIGHTNESS           255
 
 // Boat strip begin and end positions
 #define BOAT_STRIP_BEGIN_POS     0
