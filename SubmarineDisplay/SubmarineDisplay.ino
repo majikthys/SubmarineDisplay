@@ -13,8 +13,8 @@
 #define MARCHANT_SPEED_MS_INTERVAL   200
 
 // TORPEDO LENGTHS & SPEEDS
-#define SLOW_TORPEDO_LEN             3 
-#define FAST_TORPEDO_LEN             2
+#define SLOW_TORPEDO_LEN             2 
+#define FAST_TORPEDO_LEN             3
 #define FAST_TORPEDO_SPEED_MS_INTER  50
 #define SLOW_TORPEDO_SPEED_MS_INTER  100
 
