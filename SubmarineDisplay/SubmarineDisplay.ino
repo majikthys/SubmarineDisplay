@@ -811,7 +811,8 @@ int torpedoTailCurrentPos5 = -1;
 
 // TODO DRY up, lots of copypasta
 void demoTestAdvance() {
-  long stepDelay = 200;
+  long stepDelay = 150;
+  long buttonStepDelay = 1000;
   
   // Run the boat strip
   advanceSprite(boatTailCurrentPos, 1, getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
@@ -866,44 +867,46 @@ void demoTestAdvance() {
   FastLED.show(); 
 
   digitalWrite(STRIP_0_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_0_HIT_LED, LOW);
   digitalWrite(STRIP_1_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_1_HIT_LED, LOW);
   digitalWrite(STRIP_2_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_2_HIT_LED, LOW);
   digitalWrite(STRIP_3_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_3_HIT_LED, LOW);
   digitalWrite(STRIP_4_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_4_HIT_LED, LOW);
   digitalWrite(STRIP_5_HIT_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(STRIP_5_HIT_LED, LOW);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   
   
-  digitalWrite(START_BUTTON_LED, HIGH);
-  delay(stepDelay);
-  digitalWrite(START_BUTTON_LED, LOW);
-  digitalWrite(FIRE_BUTTON_LED, HIGH);
-  delay(stepDelay);
-  digitalWrite(FIRE_BUTTON_LED, LOW);
-  digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);
-  delay(stepDelay);
-  digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
-  digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
-  delay(stepDelay);
-  digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
   digitalWrite(MERCHANT_VESSEL_BUTTON_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(MERCHANT_VESSEL_BUTTON_LED, LOW);
   digitalWrite(WARSHIP_BUTTON_LED, HIGH);
-  delay(stepDelay);
+  delay(buttonStepDelay);
   digitalWrite(WARSHIP_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_SLOW_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(TORPEDO_SLOW_BUTTON_LED, LOW);
+  digitalWrite(TORPEDO_FAST_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(TORPEDO_FAST_BUTTON_LED, LOW);
+  digitalWrite(START_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(START_BUTTON_LED, LOW);
+  digitalWrite(FIRE_BUTTON_LED, HIGH);
+  delay(buttonStepDelay);
+  digitalWrite(FIRE_BUTTON_LED, LOW);
+
+  delay(1000);
 
 }
 
