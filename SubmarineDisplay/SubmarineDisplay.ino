@@ -811,51 +811,59 @@ int torpedoTailCurrentPos5 = -1;
 
 // TODO DRY up, lots of copypasta
 void demoTestAdvance() {
-  long stepDelay = 100;
+  long stepDelay = 200;
   
   // Run the boat strip
   advanceSprite(boatTailCurrentPos, 1, getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
   while (boatTailCurrentPos > -1) {
+      FastLED.show(); 
       delay(stepDelay);
       advanceSprite(boatTailCurrentPos, 1, getBoatColor(), getBoatStripBegin(), getBoatStripEnd());
   }
-  
+
   advanceSprite(torpedoTailCurrentPos0, 1, getTorpedoColor(), getTorpedoStripBegin(0), getTorpedoStripEnd(0));
   while (torpedoTailCurrentPos0 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos0, 1, getTorpedoColor(), getTorpedoStripBegin(0), getTorpedoStripEnd(0));
   }  
   
   advanceSprite(torpedoTailCurrentPos1, 1, getTorpedoColor(), getTorpedoStripBegin(1), getTorpedoStripEnd(1));
   while (torpedoTailCurrentPos1 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos1, 1, getTorpedoColor(), getTorpedoStripBegin(1), getTorpedoStripEnd(1));
   }
   
   advanceSprite(torpedoTailCurrentPos2, 1, getTorpedoColor(), getTorpedoStripBegin(2), getTorpedoStripEnd(2));
   while (torpedoTailCurrentPos2 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos2, 1, getTorpedoColor(), getTorpedoStripBegin(2), getTorpedoStripEnd(2));
   }
   
   advanceSprite(torpedoTailCurrentPos3, 1, getTorpedoColor(), getTorpedoStripBegin(3), getTorpedoStripEnd(3));
   while (torpedoTailCurrentPos3 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos3, 1, getTorpedoColor(), getTorpedoStripBegin(3), getTorpedoStripEnd(3));
   }
   
   advanceSprite(torpedoTailCurrentPos4, 1, getTorpedoColor(), getTorpedoStripBegin(4), getTorpedoStripEnd(4));
   while (torpedoTailCurrentPos4 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos4, 1, getTorpedoColor(), getTorpedoStripBegin(4), getTorpedoStripEnd(4));
   }
   
   advanceSprite(torpedoTailCurrentPos5, 1, getTorpedoColor(), getTorpedoStripBegin(5), getTorpedoStripEnd(5));
   while (torpedoTailCurrentPos5 > -1) {
+    FastLED.show(); 
     delay(stepDelay);
     advanceSprite(torpedoTailCurrentPos5, 1, getTorpedoColor(), getTorpedoStripBegin(5), getTorpedoStripEnd(5));
   }
 
+  FastLED.show(); 
 
   digitalWrite(STRIP_0_HIT_LED, HIGH);
   delay(stepDelay);
