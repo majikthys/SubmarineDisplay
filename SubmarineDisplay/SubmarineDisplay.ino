@@ -25,8 +25,8 @@
 #define FIRE_LED_FLASH_MS_INTERVAL   250
 #define HIT_FLASH_MS_INTERVAL        250
 #define HIT_FLASH_COUNT              4
-#define MISS_FLASH_COUNT 4
-#define MISS_FLASH_INTERVAL 250
+#define MISS_FLASH_COUNT 1
+#define MISS_FLASH_INTERVAL 1000
 
 // Timeout for input select and attact mode
 #define INPUT_TIMEOUT_INTERVAL 15000
@@ -696,23 +696,18 @@ void displayImpactSequence() {
 void displayMissSequence() {
 //  Serial.println("MISS!");
 
-  if (boatTailCurrentPos > getBoatStripEnd()) {
-    return;
-  }
-
-                          
-  int lightEnd = ((boatTailCurrentPos + getBoatLen() -1) >= getBoatStripEnd()) ? getBoatStripEnd() + 1 :  boatTailCurrentPos + getBoatLen();
-
   for (int flashCount = 0; flashCount < MISS_FLASH_COUNT; flashCount ++) {
-    for (int i = boatTailCurrentPos; i < lightEnd; i++) {
+    for (int i = getBoatStripBegin(); i < getBoatStripEnd() + 1; i++) {
        leds[i] = SHIP_MISS_CRGB;
     }
+    
     FastLED.show(); 
     delay(MISS_FLASH_INTERVAL);
     
-    for (int i = boatTailCurrentPos; i < lightEnd; i++) {
+    for (int i = getBoatStripBegin(); i < getBoatStripEnd() + 1; i++) {
        leds[i] = CRGB::Black;
     }
+    
     FastLED.show(); 
     delay(MISS_FLASH_INTERVAL);
   }
