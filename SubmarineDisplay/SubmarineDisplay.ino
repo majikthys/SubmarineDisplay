@@ -75,7 +75,7 @@
 
     
 // Strip brightnetss 1 to 255
-#define LED_BRIGHTNESS           1
+#define LED_BRIGHTNESS           255
 
 // Boat strip begin and end positions
 #define BOAT_STRIP_BEGIN_POS     0
